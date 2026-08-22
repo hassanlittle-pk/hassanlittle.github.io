@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ur">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback System - Hassan Little Official</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0a0d1c;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px 35px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header .icon {
+            font-size: 50px;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            background: linear-gradient(90deg, #7057ff, #00c8ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #969eb4;
+            font-size: 14px;
+            margin-top: 6px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #c9cce0;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            font-size: 14px;
+            transition: 0.3s;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #7057ff;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 20px rgba(112, 87, 255, 0.15);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: #656d82;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: 0.3s;
+            background: linear-gradient(135deg, #7057ff, #b84cff);
+            color: #ffffff;
+            box-shadow: 0 15px 35px rgba(112, 87, 255, 0.25);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 45px rgba(112, 87, 255, 0.35);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        #responseMessage {
+            margin-top: 18px;
+            padding: 14px 18px;
+            border-radius: 12px;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+        }
+
+        #responseMessage.success {
+            display: block;
+            background: rgba(0, 255, 102, 0.1);
+            border: 1px solid rgba(0, 255, 102, 0.3);
+            color: #00ff66;
+        }
+
+        #responseMessage.error {
+            display: block;
+            background: rgba(255, 42, 95, 0.1);
+            border: 1px solid rgba(255, 42, 95, 0.3);
+            color: #ff2a5f;
+        }
+
+        #responseMessage.loading {
+            display: block;
+            background: rgba(0, 200, 255, 0.1);
+            border: 1px solid rgba(0, 200, 255, 0.3);
+            color: #00c8ff;
+        }
+
+        .footer-text {
+            margin-top: 20px;
+            font-size: 12px;
+            color: #656d82;
+            text-align: center;
+        }
+
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #00ff66;
+            margin-right: 6px;
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.4; transform: scale(0.9); }
+            50% { opacity: 1; transform: scale(1.2); }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 25px 18px;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="header">
+            <span class="icon">💬</span>
+            <h1>Leave Feedback</h1>
+            <p>Your feedback goes directly to Hassan's inbox</p>
+        </div>
+
+        <form id="feedbackForm">
+            <div class="form-group">
+                <label for="username">👤 Your Name / Username</label>
+                <input type="text" id="username" placeholder="Enter your name or username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="feedback">📝 Your Feedback / Message</label>
+                <textarea id="feedback" placeholder="Write your feedback, suggestion, or message here..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn" id="submitBtn">
+                🚀 Send Feedback
+            </button>
+        </form>
+
+        <div id="responseMessage"></div>
+
+        <div class="footer-text">
+            <span class="status-dot"></span> Your feedback is delivered via secure email
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('feedbackForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const feedback = document.getElementById('feedback').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            const responseDiv = document.getElementById('responseMessage');
+
+            if (!username || !feedback) {
+                showMessage('Please fill in both fields.', 'error');
+                return;
+            }
+
+            // Show loading
+            showMessage('⏳ Sending your feedback...', 'loading');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            const now = new Date();
+            const timestamp = now.toLocaleString('en-PK', {
+                dateStyle: 'medium',
+                timeStyle: 'short',
+                timeZone: 'Asia/Karachi'
+            });
+
+            const fullMessage =
+                `👤 Username: ${username}\n` +
+                `📅 Sent: ${timestamp} (Pakistan Time)\n\n` +
+                `📝 Feedback:\n${feedback}\n\n` +
+                `---\nSent from Hassan Little Official Website`;
+
+            try {
+                const response = await fetch('https://formsubmit.co/ajax/m.hassan.business9593@gmail.com', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        message: fullMessage,
+                        _subject: `📩 New Feedback from ${username}`,
+                        _template: 'table',
+                        _captcha: 'true',
+                        username: username,
+                        feedback: feedback,
+                        timestamp: timestamp
+                    })
+                });
+
+                if (response.ok) {
+                    showMessage('✅ Thank you! Your feedback has been sent to Hassan\'s email.', 'success');
+                    document.getElementById('feedbackForm').reset();
+                } else {
+                    showMessage('❌ Something went wrong. Please try again.', 'error');
+                }
+            } catch (error) {
+                showMessage('❌ Network error. Please check your connection and try again.', 'error');
+                console.error('Feedback error:', error);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '🚀 Send Feedback';
+            }
+        });
+
+        function showMessage(text, type) {
+            const div = document.getElementById('responseMessage');
+            div.textContent = text;
+            div.className = type;
+            div.style.display = 'block';
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    div.style.display = 'none';
+                }, 8000);
+            }
+        }
+    </script>
+
+</body>
+</html>
