@@ -2912,6 +2912,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     <div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:#737b92;font-size:11px;"><span style="height:1px;background:rgba(255,255,255,.10);flex:1"></span>OR<span style="height:1px;background:rgba(255,255,255,.10);flex:1"></span></div>
                     <button type="button" class="btn secondary login-anim-item" style="width:100%;" id="googleLoginBtn" onclick="loginWithGoogle()">🔵 Continue with Google</button>
                     <div id="authStatus" style="min-height:18px;margin-top:10px;font-size:11px;color:#969eb4;"></div>
+                    <div style="margin-top:7px;font-size:9px;color:#737b92;line-height:1.45;">🔒 Email accounts require verification before dashboard access.</div>
                 </div>
 
                 <!-- SIGNUP PANEL -->
@@ -4658,12 +4659,20 @@ function switchAuthTab(tab) {
 }
 
 async function getSupabaseAuthClient(){
-    if (typeof supabase === "undefined" || !supabase.createClient) throw new Error("Supabase library could not load.");
+    if (typeof supabase === "undefined" || !supabase.createClient) {
+        throw new Error("Authentication service could not load. Please check your internet connection and refresh.");
+    }
     if (!leaderboardClient) {
         leaderboardClient = supabase.createClient(
             SUPABASE_LEADERBOARD_CONFIG.url,
             SUPABASE_LEADERBOARD_CONFIG.publishableKey,
-            {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}
+            {
+                auth:{
+                    persistSession:false,
+                    autoRefreshToken:false,
+                    detectSessionInUrl:true
+                }
+            }
         );
     }
     return leaderboardClient;
@@ -4671,11 +4680,45 @@ async function getSupabaseAuthClient(){
 
 function setAuthStatus(message, ok=false){
     const el=document.getElementById("authStatus");
-    if(el){el.textContent=message||"";el.style.color=ok?"#00ff99":"#ff9b9b";}
+    if(el){
+        el.textContent=message||"";
+        el.style.color=ok?"#00ff99":"#ff9b9b";
+    }
 }
 
-async function finishRealLogin(user){
+function humanAuthError(error){
+    const msg=String(error?.message||error||"").trim();
+    const lower=msg.toLowerCase();
+    if(lower.includes("invalid login credentials")) return "❌ Invalid email or password.";
+    if(lower.includes("email not confirmed") || lower.includes("email not verified")) return "✉️ Email not verified. Enter the 6-digit code sent to your email.";
+    if(lower.includes("rate limit") || lower.includes("too many")) return "⏳ Too many requests. Please wait a little before trying again.";
+    if(lower.includes("confirmation") || lower.includes("sending") || lower.includes("smtp")) return "📧 We couldn't send the confirmation email right now. Please check your email settings/SMTP and try again later.";
+    if(lower.includes("network") || lower.includes("fetch")) return "🌐 Connection problem. Check your internet and try again.";
+    if(lower.includes("provider is not enabled") || lower.includes("unsupported provider")) return "🔵 Google Login is not enabled in Supabase yet.";
+    return msg || "Something went wrong. Please try again.";
+}
+
+function isVerifiedUser(user){
+    return !!(user && (user.email_confirmed_at || user.confirmed_at));
+}
+
+async function finishRealLogin(user, authMethod="password"){
     const client=await getSupabaseAuthClient();
+
+    // Password/email accounts MUST be verified before entering the website.
+    // Google/OAuth accounts are handled by the provider and are allowed after OAuth succeeds.
+    if(authMethod === "password" && user?.email && !isVerifiedUser(user)){
+        await client.auth.signOut({scope:"local"}).catch(()=>{});
+        const panel=document.getElementById("emailVerifyPanel");
+        if(panel)panel.classList.add("show");
+        pendingSignupEmail=String(user.email||"").trim();
+        const display=document.getElementById("verifyEmailDisplay");
+        if(display)display.textContent=pendingSignupEmail;
+        setAuthStatus("✉️ Your email is not verified. Enter the 6-digit code below.");
+        setOtpStatus("Enter the 6-digit code from your email.");
+        return false;
+    }
+
     const {data:profile}=await client.from("profiles").select("username,streak,last_streak_date,total_points,total_trophies").eq("id",user.id).maybeSingle();
     const meta=user.user_metadata||{};
     loggedInUser=profile?.username || meta.username || meta.name || (user.email?user.email.split("@")[0]:"User");
@@ -4687,9 +4730,11 @@ async function finishRealLogin(user){
     document.getElementById("loginOverlay").style.display="none";
     document.body.classList.remove("login-privacy-visible");
     const privacy=document.getElementById("loginPrivacyOverlay");if(privacy)privacy.style.display="none";
+    const otpPanel=document.getElementById("emailVerifyPanel");if(otpPanel)otpPanel.classList.remove("show");
     if(typeof syncLeaderboardUsername==='function') await syncLeaderboardUsername();
     if(typeof recordLeaderboardLogin==='function') await recordLeaderboardLogin();
     showLoginLoadingThenDownload();
+    return true;
 }
 
 async function submitLogin(event) {
@@ -4701,25 +4746,29 @@ async function submitLogin(event) {
     try{
         const email=document.getElementById("loginEmailInput").value.trim();
         const password=document.getElementById("loginPasswordInput").value;
+        if(!email || !password) throw new Error("Please enter your email and password.");
         const client=await getSupabaseAuthClient();
         const {data,error}=await client.auth.signInWithPassword({email,password});
         if(error)throw error;
-        if(!data.user)throw new Error("Login did not create a session.");
-        setAuthStatus("Login successful ✓",true);
-        await finishRealLogin(data.user);
+        if(!data?.user)throw new Error("Login did not create a session.");
+        const ok=await finishRealLogin(data.user,"password");
+        if(ok) setAuthStatus("Login successful ✓",true);
     }catch(error){
         console.warn("Supabase login:",error);
-        setAuthStatus(error?.message||"Login failed. Check your email and password.");
+        setAuthStatus(humanAuthError(error));
     }finally{
         if(submitBtn){submitBtn.disabled=false;submitBtn.textContent="Log In";}
     }
 }
+
+let oauthLoginInProgress=false;
 
 async function loginWithGoogle(){
     playClickSound();
     const btn=document.getElementById("googleLoginBtn");
     if(btn){btn.disabled=true;btn.textContent="Opening Google…";}
     setAuthStatus("Connecting to Google…");
+    oauthLoginInProgress=true;
     try{
         const client=await getSupabaseAuthClient();
         const {error}=await client.auth.signInWithOAuth({
@@ -4728,8 +4777,9 @@ async function loginWithGoogle(){
         });
         if(error)throw error;
     }catch(error){
+        oauthLoginInProgress=false;
         console.warn("Google login:",error);
-        setAuthStatus(error?.message||"Google login could not start.");
+        setAuthStatus(humanAuthError(error));
         if(btn){btn.disabled=false;btn.textContent="🔵 Continue with Google";}
     }
 }
@@ -4766,6 +4816,7 @@ async function verifySignupOtp(){
         const {data,error}=await client.auth.verifyOtp({email:pendingSignupEmail,token,type:"email"});
         if(error)throw error;
         if(!data?.user)throw new Error("Verification succeeded but no account session was returned.");
+
         const {error:profileError}=await client.from("profiles").upsert({
             id:data.user.id,
             username:pendingSignupUsername || data.user.user_metadata?.username || pendingSignupEmail.split("@")[0],
@@ -4774,11 +4825,17 @@ async function verifySignupOtp(){
             email_verified:true
         },{onConflict:"id"});
         if(profileError)console.warn("Profile sync after verification:",profileError.message);
+
+        if(!isVerifiedUser(data.user)){
+            await client.auth.signOut({scope:"local"}).catch(()=>{});
+            throw new Error("The code was accepted, but the email is still not marked verified. Please request a new code.");
+        }
+
         setOtpStatus("Email verified ✓",true);
-        await finishRealLogin(data.user);
+        await finishRealLogin(data.user,"password");
     }catch(error){
         console.warn("Email OTP verification:",error);
-        setOtpStatus(error?.message||"Invalid or expired verification code.");
+        setOtpStatus(humanAuthError(error));
     }finally{
         if(btn){btn.disabled=false;btn.textContent="Verify Email";}
     }
@@ -4795,7 +4852,7 @@ async function resendSignupOtp(){
         setOtpStatus("A new verification code has been sent ✓",true);
     }catch(error){
         console.warn("Resend verification:",error);
-        setOtpStatus(error?.message||"Could not resend the code.");
+        setOtpStatus(humanAuthError(error));
     }finally{
         if(btn){btn.disabled=false;btn.textContent="Resend Code";}
     }
@@ -4816,24 +4873,41 @@ async function submitSignup(event) {
         if(username.length<3)throw new Error("Username must be at least 3 characters.");
         if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error("Please enter a valid email address.");
         if(passVal.length<6)throw new Error("Password must be at least 6 characters.");
+
         const client=await getSupabaseAuthClient();
-        const {data,error}=await client.auth.signUp({email,password:passVal,options:{data:{username}}});
+        const {data,error}=await client.auth.signUp({
+            email,
+            password:passVal,
+            options:{data:{username}}
+        });
         if(error)throw error;
-        // With email confirmation enabled Supabase returns no session.
-        // The user must enter the 6-digit email OTP before entering the dashboard.
-        if(data?.user && !data?.session){
-            showEmailVerification(email,username);
-            setAuthStatus("Verification code sent ✓",true);
-        }else if(data?.session && data?.user){
-            setAuthStatus("Account created ✓",true);
-            await finishRealLogin(data.user);
-        }else{
-            showEmailVerification(email,username);
-            setAuthStatus("Check your email for the verification code.",true);
+        if(!data?.user)throw new Error("Account could not be created.");
+
+        pendingSignupEmail=email;
+        pendingSignupUsername=username;
+
+        // NEVER enter the dashboard immediately after signup.
+        // If the project accidentally returns a session because Confirm Email is off,
+        // sign it out locally and explicitly request the signup verification email.
+        if(data?.session){
+            await client.auth.signOut({scope:"local"}).catch(()=>{});
         }
+
+        // Always show the OTP screen. If confirmation is enabled, this is the normal flow.
+        showEmailVerification(email,username);
+
+        // If no session was returned, Supabase normally already sent the email.
+        // When a session was returned, request the signup email explicitly.
+        if(data?.session){
+            const resendResult=await client.auth.resend({type:"signup",email});
+            if(resendResult.error) throw resendResult.error;
+        }
+
+        setAuthStatus("✉️ Verification code sent. Check your email before continuing.",true);
     }catch(error){
         console.warn("Supabase signup:",error);
-        setAuthStatus(error?.message||"Could not create account.");
+        setAuthStatus(humanAuthError(error));
+        setOtpStatus(humanAuthError(error));
     }finally{
         if(submitBtn){submitBtn.disabled=false;submitBtn.textContent="Create Account";}
     }
@@ -4842,17 +4916,29 @@ async function submitSignup(event) {
 async function restoreSupabaseSession(){
     try{
         const client=await getSupabaseAuthClient();
-        const {data}=await client.auth.getSession();
-        if(data?.session?.user){
-            // Only restore an already authenticated user; never auto-accept privacy.
-            if(document.getElementById("loginOverlay")?.style.display!=="none") await finishRealLogin(data.session.user);
-        }
+
+        // Security rule: this page never silently restores an old login.
+        // Any local session left by a previous version is removed immediately.
+        await client.auth.signOut({scope:"local"}).catch(()=>{});
+
         client.auth.onAuthStateChange(async (event,session)=>{
-            if((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&session?.user){
-                if(document.getElementById("loginOverlay")?.style.display!=="none") await finishRealLogin(session.user);
+            // Only process a session that came from the user's intentional Google OAuth flow.
+            if(event==='SIGNED_IN' && session?.user && oauthLoginInProgress){
+                oauthLoginInProgress=false;
+                try{
+                    const ok=await finishRealLogin(session.user,"google");
+                    if(!ok) setAuthStatus("Google account could not be opened.");
+                }catch(error){
+                    console.warn("Google session:",error);
+                    setAuthStatus(humanAuthError(error));
+                    await client.auth.signOut({scope:"local"}).catch(()=>{});
+                }
             }
         });
-    }catch(error){console.warn("Auth session restore:",error)}
+    }catch(error){
+        console.warn("Auth initialization:",error);
+        setAuthStatus(humanAuthError(error));
+    }
 }
 
 function showLoginLoadingThenDownload() {
