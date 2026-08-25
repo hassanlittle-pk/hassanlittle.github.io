@@ -2881,30 +2881,47 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
 </div>
 
-<!-- STEP 3: LOGIN OVERLAY -->
+<!-- STEP 3: LOGIN / SIGNUP OVERLAY -->
 <div class="entry-overlay" id="loginOverlay" style="display: none;">
     <div class="entry-box auth-box">
-        <div style="font-size: 46px; margin-bottom: 6px;"><span class="login-icon-anim" id="authIcon">🔐</span></div>
-        <h2 class="login-anim-item" id="authTitle" style="font-size: 26px;">Welcome Back</h2>
-        <p class="login-anim-item" id="authSubtitle" style="color: #969eb4; margin-top: 6px; margin-bottom: 20px;">Log in to your existing account to continue.</p>
+        <div style="font-size:46px;margin-bottom:6px;"><span class="login-icon-anim" id="authIcon">🔐</span></div>
+        <h2 class="login-anim-item" id="authTitle" style="font-size:26px;">Welcome Back</h2>
+        <p class="login-anim-item" id="authSubtitle" style="color:#969eb4;margin-top:6px;margin-bottom:20px;">Log in to your account to continue.</p>
+        <div class="login-only-badge login-anim-item">🔐 SECURE ACCOUNT ACCESS</div>
 
-        <div class="login-only-badge login-anim-item">🔐 SECURE ACCOUNT LOGIN</div>
+        <div class="auth-tabs login-anim-item" role="tablist" aria-label="Account access">
+            <button type="button" class="auth-tab active" id="loginTabBtn" onclick="switchAuthTab('login')">Log In</button>
+            <button type="button" class="auth-tab" id="signupTabBtn" onclick="switchAuthTab('signup')">Sign Up</button>
+            <div class="auth-tab-indicator" id="authTabIndicator"></div>
+        </div>
 
-        <div class="auth-panels-viewport login-anim-item" style="overflow:visible;">
-            <div class="auth-panels-track" id="authPanelsTrack" style="transform:none;width:100%;">
-                <div class="auth-panel" id="loginPanel" style="width:100%;">
+        <div class="auth-panels-viewport login-anim-item" style="overflow:hidden;">
+            <div class="auth-panels-track" id="authPanelsTrack" style="width:200%;transform:translateX(0);">
+                <div class="auth-panel" id="loginPanel">
                     <form onsubmit="submitLogin(event)">
-                        <input type="text" id="usernameInput" class="entry-input login-anim-item" placeholder="Enter your username" autocomplete="username" required>
-                        <input type="password" id="passwordInput" class="entry-input login-anim-item" placeholder="Enter your password" autocomplete="current-password" required>
+                        <input type="text" id="usernameInput" class="entry-input login-anim-item" placeholder="Username" autocomplete="username" required>
+                        <input type="password" id="passwordInput" class="entry-input login-anim-item" placeholder="Password" autocomplete="current-password" required>
                         <div id="loginErrorMessage" class="login-error-message" role="alert" aria-live="polite"></div>
-                        <button type="submit" class="btn primary login-anim-item" style="width: 100%;" id="loginSubmitBtn">🔐 Log In Securely</button>
+                        <button type="submit" class="btn primary login-anim-item" style="width:100%;" id="loginSubmitBtn">🔐 Log In Securely</button>
                     </form>
-                    <div class="login-account-note">Your username is linked to your existing Supabase account. Use the same username and password each time to restore the same profile, streak, points and trophies.</div>
+                    <div class="login-account-note">Use the exact username and password you created. Your account stays linked to the same Supabase identity.</div>
+                </div>
+
+                <div class="auth-panel" id="signupPanel">
+                    <form onsubmit="submitSignup(event)">
+                        <input type="text" id="signupUsernameInput" class="entry-input" placeholder="Choose a username" autocomplete="username" required maxlength="50">
+                        <input type="email" id="signupEmailInput" class="entry-input" placeholder="Email address" autocomplete="email" required>
+                        <input type="password" id="signupPasswordInput" class="entry-input" placeholder="Create a password" autocomplete="new-password" required minlength="6">
+                        <input type="password" id="signupPasswordConfirmInput" class="entry-input" placeholder="Confirm password" autocomplete="new-password" required minlength="6">
+                        <div id="signupErrorMessage" class="login-error-message" role="alert" aria-live="polite"></div>
+                        <button type="submit" class="btn primary" style="width:100%;" id="signupSubmitBtn">✨ Create My Account</button>
+                    </form>
+                    <div class="login-account-note">First time here? Create your account once. Next time, use the same username and password to return to the same profile.</div>
                 </div>
             </div>
         </div>
 
-        <div class="login-tips login-anim-item" id="loginTip">💡 Make sure to remember your password.</div>
+        <div class="login-tips login-anim-item" id="loginTip">💡 Your username identifies your profile; your password protects your account.</div>
     </div>
 </div>
 
@@ -4616,69 +4633,142 @@ function showLoginError(message){
     el.classList.add('show');
 }
 function clearLoginError(){
-    const el=document.getElementById('loginErrorMessage');
-    if(el){el.textContent='';el.classList.remove('show');}
+    ['loginErrorMessage','signupErrorMessage'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){el.textContent='';el.classList.remove('show');}
+    });
+}
+function showSignupError(message){
+    const el=document.getElementById('signupErrorMessage');
+    if(!el)return;
+    el.textContent=message;
+    el.classList.add('show');
+}
+function switchAuthTab(tab){
+    clearLoginError();
+    const track=document.getElementById('authPanelsTrack');
+    const indicator=document.getElementById('authTabIndicator');
+    const loginBtn=document.getElementById('loginTabBtn');
+    const signupBtn=document.getElementById('signupTabBtn');
+    const title=document.getElementById('authTitle');
+    const subtitle=document.getElementById('authSubtitle');
+    const icon=document.getElementById('authIcon');
+    if(tab==='signup'){
+        track?.classList.add('show-signup');
+        if(track)track.style.transform='translateX(-50%)';
+        indicator?.classList.add('to-signup');
+        loginBtn?.classList.remove('active'); signupBtn?.classList.add('active');
+        if(title)title.textContent='Create Your Account';
+        if(subtitle)subtitle.textContent='Create your account once, then use the same username and password every time.';
+        if(icon)icon.textContent='✨';
+    }else{
+        track?.classList.remove('show-signup');
+        if(track)track.style.transform='translateX(0)';
+        indicator?.classList.remove('to-signup');
+        signupBtn?.classList.remove('active'); loginBtn?.classList.add('active');
+        if(title)title.textContent='Welcome Back';
+        if(subtitle)subtitle.textContent='Log in to your account to continue.';
+        if(icon)icon.textContent='🔐';
+    }
+}
+function normalizeUsername(value){return String(value||'').trim().replace(/\s+/g,' ');}
+
+async function resolveUsernameEmail(client, username){
+    const {data,error}=await client.rpc('resolve_username_email',{p_username:normalizeUsername(username)});
+    if(error)throw error;
+    return data || null;
 }
 
-// Signup is intentionally disabled: this website uses existing Supabase accounts only.
-function switchAuthTab(){ return; }
-
-async function submitLogin(event) {
+async function submitLogin(event){
     event.preventDefault();
-    playClickSound();
-    clearLoginError();
+    playClickSound(); clearLoginError();
     const submitBtn=document.getElementById('loginSubmitBtn');
-    const username=(document.getElementById('usernameInput')?.value||'').trim();
+    const username=normalizeUsername(document.getElementById('usernameInput')?.value);
     const password=document.getElementById('passwordInput')?.value||'';
-    if(!username || !password){ showLoginError('Please enter both your username and password.'); return; }
-    if(username.length>50){ showLoginError('Username is too long.'); return; }
-    if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='⏳ Verifying account…';submitBtn.classList.add('rippling');}
+    if(!username||!password){showLoginError('Please enter both your username and password.');return;}
+    if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='⏳ Verifying account…';}
     try{
         const client=getAuthClient();
-        // Resolve the username to the email belonging to the existing profile.
-        const {data:profile,error:profileError}=await client.from('profiles').select('id,username,email,email_verified').ilike('username',username).maybeSingle();
-        if(profileError) throw new Error('Could not look up this username. Please check your Supabase profile policy.');
-        if(!profile?.email) throw new Error('Username not found. Please use the exact username linked to your account.');
-
-        const {data,error}=await client.auth.signInWithPassword({email:profile.email,password});
-        if(error) throw error;
-        if(!data?.user){ throw new Error('Login was not completed. Please try again.'); }
-        if(!data.user.email_confirmed_at){
-            await client.auth.signOut();
-            throw new Error('Email verification is required before this account can log in.');
-        }
-
-        // Only after real Supabase authentication succeeds do we open the dashboard.
-        loggedInUser=String(profile.username||username).trim();
-        try{ await client.from('profiles').update({email_verified:true}).eq('id',profile.id); }catch(_e){}
+        const account=await resolveUsernameEmail(client,username);
+        if(!account?.email)throw new Error('Username not found. If this is your first visit, use Sign Up first.');
+        const {data,error}=await client.auth.signInWithPassword({email:account.email,password});
+        if(error)throw error;
+        if(!data?.user)throw new Error('Login was not completed. Please try again.');
+        if(!data.user.email_confirmed_at){await client.auth.signOut();throw new Error('Email not verified. Please verify your email before logging in.');}
+        loggedInUser=String(account.username||username).trim();
         document.getElementById('glowUsernameDisplay').textContent=loggedInUser;
         document.getElementById('miniUsername').textContent=loggedInUser;
         document.getElementById('dropdownName').textContent=loggedInUser;
         document.getElementById('miniAvatar').textContent=loggedInUser.charAt(0).toUpperCase();
+        // Keep engagement data separate per account on this browser.
+        window.__engagementAccountKey='hl_engagement_v2_'+loggedInUser.toLowerCase();
+        loadEngagement();
         if(loginTipTimer)clearInterval(loginTipTimer);
         document.getElementById('loginOverlay').style.display='none';
         document.getElementById('loginPrivacyOverlay').style.display='none';
         document.body.classList.remove('login-privacy-visible');
-        syncLeaderboardUsername();
-        recordLeaderboardLogin();
-        showLoginLoadingThenDownload();
+        syncLeaderboardUsername(); recordLeaderboardLogin(); showLoginLoadingThenDownload();
     }catch(error){
         console.warn('Secure login error:',error);
         const msg=String(error?.message||error||'Login failed');
         let friendly=msg;
-        if(/invalid login credentials/i.test(msg)) friendly='❌ Invalid username or password.';
-        else if(/email not confirmed|verification is required/i.test(msg)) friendly='📧 This account is not verified yet. Please verify the email before logging in.';
-        else if(/rate limit|too many/i.test(msg)) friendly='⏱️ Too many login attempts. Please wait a moment and try again.';
-        else if(/fetch|network|failed to fetch/i.test(msg)) friendly='🌐 Connection problem. Please check your internet connection and try again.';
+        if(/invalid login credentials/i.test(msg))friendly='❌ Invalid username or password.';
+        else if(/username not found/i.test(msg))friendly='👤 Username not found. If this is your first visit, use Sign Up first.';
+        else if(/not verified|email not confirmed/i.test(msg))friendly='📧 Please verify your email before logging in.';
+        else if(/rate limit|too many/i.test(msg))friendly='⏱️ Too many attempts. Please wait a moment and try again.';
+        else if(/fetch|network|failed to fetch/i.test(msg))friendly='🌐 Connection problem. Please check your internet connection.';
         showLoginError(friendly);
-    }finally{
-        if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='🔐 Log In Securely';submitBtn.classList.remove('rippling');}
-    }
+    }finally{if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='🔐 Log In Securely';}}
 }
 
-function submitSignup(event){
-    if(event)event.preventDefault();
-    showLoginError('🛡️ New account creation is disabled here. Please log in with your existing account.');
+async function submitSignup(event){
+    event.preventDefault();
+    playClickSound(); clearLoginError();
+    const btn=document.getElementById('signupSubmitBtn');
+    const username=normalizeUsername(document.getElementById('signupUsernameInput')?.value);
+    const email=String(document.getElementById('signupEmailInput')?.value||'').trim().toLowerCase();
+    const password=document.getElementById('signupPasswordInput')?.value||'';
+    const confirm=document.getElementById('signupPasswordConfirmInput')?.value||'';
+    if(username.length<3){showSignupError('Username must be at least 3 characters.');return;}
+    if(!/^[A-Za-z0-9_.-]+$/.test(username)){showSignupError('Use only letters, numbers, underscore, dot or hyphen in your username.');return;}
+    if(password.length<6){showSignupError('Password must be at least 6 characters.');return;}
+    if(password!==confirm){showSignupError('Passwords do not match.');return;}
+    if(btn){btn.disabled=true;btn.textContent='⏳ Creating account…';}
+    try{
+        const client=getAuthClient();
+        const existing=await resolveUsernameEmail(client,username);
+        if(existing?.email)throw new Error('That username is already taken. Please choose another one.');
+        const {data,error}=await client.auth.signUp({
+            email,password,
+            options:{data:{username}}
+        });
+        if(error)throw error;
+        if(data?.user){
+            if(data.session){
+                // If email confirmation is disabled, sign-in can continue immediately.
+                loggedInUser=username;
+                window.__engagementAccountKey='hl_engagement_v2_'+username.toLowerCase();
+                loadEngagement();
+                document.getElementById('glowUsernameDisplay').textContent=username;
+                document.getElementById('miniUsername').textContent=username;
+                document.getElementById('dropdownName').textContent=username;
+                document.getElementById('miniAvatar').textContent=username.charAt(0).toUpperCase();
+                document.getElementById('loginOverlay').style.display='none';
+                syncLeaderboardUsername(); recordLeaderboardLogin(); showLoginLoadingThenDownload();
+            }else{
+                showSignupError('📧 Account created! Check your email and click the confirmation link. Then return here and Log In with the same username and password.');
+            }
+        }else throw new Error('Account could not be created. Please try again.');
+    }catch(error){
+        console.warn('Signup error:',error);
+        const msg=String(error?.message||error||'Signup failed');
+        let friendly=msg;
+        if(/already|duplicate|taken/i.test(msg))friendly='👤 That username or email is already in use.';
+        else if(/rate limit|email rate limit/i.test(msg))friendly='📧 Email sending is temporarily rate-limited. Please try again later.';
+        else if(/password/i.test(msg)&&/weak|short|characters/i.test(msg))friendly='🔐 Please choose a stronger password.';
+        else if(/fetch|network|failed to fetch/i.test(msg))friendly='🌐 Connection problem. Please check your internet connection.';
+        showSignupError(friendly);
+    }finally{if(btn){btn.disabled=false;btn.textContent='✨ Create My Account';}}
 }
 
 function showLoginLoadingThenDownload() {
@@ -5463,12 +5553,13 @@ async function sendWorldChat(){const input=document.getElementById('worldChatInp
 
 /* ================= DAILY STREAK + MISSIONS + SPIN + LIVE ACTIVITY ================= */
 const ENGAGE_KEY='hl_engagement_v1';
+function engagementStorageKey(){return window.__engagementAccountKey||ENGAGE_KEY;}
 let engagementState={streak:0,lastDate:'',missionDate:'',missionCount:0,missionClaimed:false,spinDate:'',activities:[]};
 let lastActivitySnapshot=[];
 function localDateKey(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
 function shiftLocalDate(key,delta){const [y,m,d]=String(key||'').split('-').map(Number);if(!y)return '';const x=new Date(y,m-1,d);x.setDate(x.getDate()+delta);return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`}
-function loadEngagement(){try{const raw=localStorage.getItem(ENGAGE_KEY);if(raw)engagementState={...engagementState,...JSON.parse(raw)}}catch(e){};const today=localDateKey();if(engagementState.missionDate!==today){engagementState.missionDate=today;engagementState.missionCount=0;engagementState.missionClaimed=false}if(engagementState.lastDate!==today){const yesterday=shiftLocalDate(today,-1);engagementState.streak=engagementState.lastDate===yesterday?Math.max(1,Number(engagementState.streak||0)+1):1;engagementState.lastDate=today;saveEngagement();if(typeof awardLeaderboardPoints==='function'&&leaderboardReady)awardLeaderboardPoints(loggedInUser||leaderboardVisitorName,5)}updateEngagementUI()}
-function saveEngagement(){try{localStorage.setItem(ENGAGE_KEY,JSON.stringify(engagementState))}catch(e){}}
+function loadEngagement(){try{const raw=localStorage.getItem(engagementStorageKey());if(raw)engagementState={...engagementState,...JSON.parse(raw)}}catch(e){};const today=localDateKey();if(engagementState.missionDate!==today){engagementState.missionDate=today;engagementState.missionCount=0;engagementState.missionClaimed=false}if(engagementState.lastDate!==today){const yesterday=shiftLocalDate(today,-1);engagementState.streak=engagementState.lastDate===yesterday?Math.max(1,Number(engagementState.streak||0)+1):1;engagementState.lastDate=today;saveEngagement();if(typeof awardLeaderboardPoints==='function'&&leaderboardReady)awardLeaderboardPoints(loggedInUser||leaderboardVisitorName,5)}updateEngagementUI()}
+function saveEngagement(){try{localStorage.setItem(engagementStorageKey(),JSON.stringify(engagementState))}catch(e){}}
 function updateEngagementUI(){const s=Number(engagementState.streak||0);const a=document.getElementById('profileStreakDays');if(a)a.textContent=s;const b=document.getElementById('profileMenuStreak');if(b)b.textContent=s;const done=Math.min(3,Number(engagementState.missionCount||0));const md=document.getElementById('missionDone');if(md)md.textContent=done;const mp=document.getElementById('missionProgress');if(mp)mp.style.width=(done/3*100)+'%';const mt=document.getElementById('missionText');if(mt)mt.textContent=done>=3?'Mission complete! Come back tomorrow for a new one.':'Explore '+(3-done)+' more dashboard feature'+(3-done===1?'':'s')+' today.';if(done>=3){mt?.classList.add('mission-complete');if(document.getElementById('missionRewardText'))document.getElementById('missionRewardText').textContent=engagementState.missionClaimed?'Reward claimed: +30 points':'Complete — reward will be claimed now.'}else mt?.classList.remove('mission-complete');const spin=document.getElementById('dailySpinBtn');if(spin){const used=engagementState.spinDate===localDateKey();spin.disabled=used;spin.innerHTML=used?'✅ SPIN CLAIMED TODAY':'<span class="spin-icon">🎡</span> SPIN FOR POINTS'} }
 function addLiveActivity(text){engagementState.activities=[{text,time:Date.now()},...(engagementState.activities||[])].slice(0,12);saveEngagement();renderLiveActivity()}
 function renderLiveActivity(){const box=document.getElementById('liveActivityFeed');if(!box)return;const arr=engagementState.activities||[];box.innerHTML=arr.length?arr.map(x=>`<div class="activity-item"><b>${escapeHtml(x.text)}</b><span>${formatActivityTime(x.time)}</span></div>`).join(''):'<div class="activity-item">Waiting for live activity…</div>'}
