@@ -1954,6 +1954,12 @@ footer.site-footer {
     55%, 95% { transform: translateX(120px); opacity: 0; }
     100% { transform: translateX(0); opacity: 1; }
 }
+
+.login-only-badge{margin:0 auto 18px;padding:9px 12px;border:1px solid rgba(0,200,255,.2);background:rgba(0,200,255,.06);border-radius:12px;color:#8beaff;font-size:11px;font-weight:800;letter-spacing:.08em;text-align:center;}
+.login-error-message{display:none;margin:10px 0;padding:10px 12px;border-radius:11px;border:1px solid rgba(255,70,100,.35);background:rgba(255,40,80,.09);color:#ff9aab;font-size:11px;line-height:1.45;text-align:left;}
+.login-error-message.show{display:block;}
+.login-account-note{margin-top:12px;padding:10px 12px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.07);color:#8f98ae;font-size:10px;line-height:1.55;text-align:center;}
+
 .login-tips {
     margin-top: 18px;
     padding: 12px 14px;
@@ -2880,37 +2886,21 @@ document.addEventListener("DOMContentLoaded", function () {
     <div class="entry-box auth-box">
         <div style="font-size: 46px; margin-bottom: 6px;"><span class="login-icon-anim" id="authIcon">🔐</span></div>
         <h2 class="login-anim-item" id="authTitle" style="font-size: 26px;">Welcome Back</h2>
-        <p class="login-anim-item" id="authSubtitle" style="color: #969eb4; margin-top: 6px; margin-bottom: 20px;">Log in or create an account to begin custom setup.</p>
+        <p class="login-anim-item" id="authSubtitle" style="color: #969eb4; margin-top: 6px; margin-bottom: 20px;">Log in to your existing account to continue.</p>
 
-        <div class="auth-tabs login-anim-item">
-            <button type="button" class="auth-tab active" id="tabLoginBtn" onclick="switchAuthTab('login')">Log In</button>
-            <button type="button" class="auth-tab" id="tabSignupBtn" onclick="switchAuthTab('signup')">Sign Up</button>
-            <div class="auth-tab-indicator" id="authTabIndicator"></div>
-        </div>
+        <div class="login-only-badge login-anim-item">🔐 SECURE ACCOUNT LOGIN</div>
 
-        <div class="auth-panels-viewport login-anim-item">
-            <div class="auth-panels-track" id="authPanelsTrack">
-
-                <!-- LOGIN PANEL -->
-                <div class="auth-panel" id="loginPanel">
+        <div class="auth-panels-viewport login-anim-item" style="overflow:visible;">
+            <div class="auth-panels-track" id="authPanelsTrack" style="transform:none;width:100%;">
+                <div class="auth-panel" id="loginPanel" style="width:100%;">
                     <form onsubmit="submitLogin(event)">
-                        <input type="text" id="usernameInput" class="entry-input login-anim-item" placeholder="Enter Username" required>
-                        <input type="password" class="entry-input login-anim-item" placeholder="Password" required>
-                        <button type="submit" class="btn primary login-anim-item" style="width: 100%;" id="loginSubmitBtn">Log In</button>
+                        <input type="text" id="usernameInput" class="entry-input login-anim-item" placeholder="Enter your username" autocomplete="username" required>
+                        <input type="password" id="passwordInput" class="entry-input login-anim-item" placeholder="Enter your password" autocomplete="current-password" required>
+                        <div id="loginErrorMessage" class="login-error-message" role="alert" aria-live="polite"></div>
+                        <button type="submit" class="btn primary login-anim-item" style="width: 100%;" id="loginSubmitBtn">🔐 Log In Securely</button>
                     </form>
+                    <div class="login-account-note">Your username is linked to your existing Supabase account. Use the same username and password each time to restore the same profile, streak, points and trophies.</div>
                 </div>
-
-                <!-- SIGNUP PANEL -->
-                <div class="auth-panel" id="signupPanel">
-                    <form onsubmit="submitSignup(event)">
-                        <input type="text" id="signupUsernameInput" class="entry-input" placeholder="Choose a Username" required>
-                        <input type="email" id="signupEmailInput" class="entry-input" placeholder="Email Address" required>
-                        <input type="password" id="signupPasswordInput" class="entry-input" placeholder="Create Password" required>
-                        <input type="password" id="signupConfirmInput" class="entry-input" placeholder="Confirm Password" required>
-                        <button type="submit" class="btn primary" style="width: 100%;" id="signupSubmitBtn">Create Account</button>
-                    </form>
-                </div>
-
             </div>
         </div>
 
@@ -4542,7 +4532,7 @@ let loginTipTimer = null;
 function startLoginTips() {
     const tips = [
         "💡 Make sure to remember your password.",
-        "🔐 Enter any username or password to login.",
+        "🔐 Use the same username and password to return to your account.",
         "🧠 Make sure you remember your pass.",
         "🛡️ This website uses SECURITY 3.0 X ADVANCED SYSTEM.",
         "🚀 MUCH MORE FEATURES COMING SOON...",
@@ -4552,7 +4542,7 @@ function startLoginTips() {
         "⚡ Your dashboard theme can be changed anytime.",
         "🎧 Explore the music player once you're inside.",
         "🖥️ Best experienced on a modern browser.",
-        "🔄 You can log in again anytime with any username.",
+        "🔄 Return anytime with the same account credentials.",
         "✨ Try switching between 10 different color themes.",
         "🙌 Thanks for visiting Hassan Little Official!",
         "🕒 Check the live clock in the top-right corner of the dashboard.",
@@ -4602,81 +4592,88 @@ function startLoginTips() {
     }, 3000);
 }
 
-function switchAuthTab(tab) {
-    playClickSound();
-    const track = document.getElementById("authPanelsTrack");
-    const indicator = document.getElementById("authTabIndicator");
-    const tabLoginBtn = document.getElementById("tabLoginBtn");
-    const tabSignupBtn = document.getElementById("tabSignupBtn");
-    const title = document.getElementById("authTitle");
-    const subtitle = document.getElementById("authSubtitle");
-    const icon = document.getElementById("authIcon");
+let authClient = null;
+const AUTH_CONFIG = { url: SUPABASE_LEADERBOARD_CONFIG.url, publishableKey: SUPABASE_LEADERBOARD_CONFIG.publishableKey };
 
-    if (tab === "signup") {
-        track.classList.add("show-signup");
-        indicator.classList.add("to-signup");
-        tabSignupBtn.classList.add("active");
-        tabLoginBtn.classList.remove("active");
-        title.textContent = "Create Account";
-        subtitle.textContent = "Sign up to begin custom setup.";
-        icon.textContent = "📝";
-    } else {
-        track.classList.remove("show-signup");
-        indicator.classList.remove("to-signup");
-        tabLoginBtn.classList.add("active");
-        tabSignupBtn.classList.remove("active");
-        title.textContent = "Welcome Back";
-        subtitle.textContent = "Log in or create an account to begin custom setup.";
-        icon.textContent = "🔐";
+function getAuthClient(){
+    if(!authClient){
+        authClient = window.supabase.createClient(AUTH_CONFIG.url, AUTH_CONFIG.publishableKey, {
+            auth: { persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }
+        });
+    }
+    return authClient;
+}
+
+function showLoginError(message){
+    const el=document.getElementById('loginErrorMessage');
+    if(!el)return;
+    el.textContent=message;
+    el.classList.add('show');
+}
+function clearLoginError(){
+    const el=document.getElementById('loginErrorMessage');
+    if(el){el.textContent='';el.classList.remove('show');}
+}
+
+// Signup is intentionally disabled: this website uses existing Supabase accounts only.
+function switchAuthTab(){ return; }
+
+async function submitLogin(event) {
+    event.preventDefault();
+    playClickSound();
+    clearLoginError();
+    const submitBtn=document.getElementById('loginSubmitBtn');
+    const username=(document.getElementById('usernameInput')?.value||'').trim();
+    const password=document.getElementById('passwordInput')?.value||'';
+    if(!username || !password){ showLoginError('Please enter both your username and password.'); return; }
+    if(username.length>50){ showLoginError('Username is too long.'); return; }
+    if(submitBtn){submitBtn.disabled=true;submitBtn.textContent='⏳ Verifying account…';submitBtn.classList.add('rippling');}
+    try{
+        const client=getAuthClient();
+        // Resolve the username to the email belonging to the existing profile.
+        const {data:profile,error:profileError}=await client.from('profiles').select('id,username,email,email_verified').ilike('username',username).maybeSingle();
+        if(profileError) throw new Error('Could not look up this username. Please check your Supabase profile policy.');
+        if(!profile?.email) throw new Error('Username not found. Please use the exact username linked to your account.');
+
+        const {data,error}=await client.auth.signInWithPassword({email:profile.email,password});
+        if(error) throw error;
+        if(!data?.user){ throw new Error('Login was not completed. Please try again.'); }
+        if(!data.user.email_confirmed_at){
+            await client.auth.signOut();
+            throw new Error('Email verification is required before this account can log in.');
+        }
+
+        // Only after real Supabase authentication succeeds do we open the dashboard.
+        loggedInUser=String(profile.username||username).trim();
+        try{ await client.from('profiles').update({email_verified:true}).eq('id',profile.id); }catch(_e){}
+        document.getElementById('glowUsernameDisplay').textContent=loggedInUser;
+        document.getElementById('miniUsername').textContent=loggedInUser;
+        document.getElementById('dropdownName').textContent=loggedInUser;
+        document.getElementById('miniAvatar').textContent=loggedInUser.charAt(0).toUpperCase();
+        if(loginTipTimer)clearInterval(loginTipTimer);
+        document.getElementById('loginOverlay').style.display='none';
+        document.getElementById('loginPrivacyOverlay').style.display='none';
+        document.body.classList.remove('login-privacy-visible');
+        syncLeaderboardUsername();
+        recordLeaderboardLogin();
+        showLoginLoadingThenDownload();
+    }catch(error){
+        console.warn('Secure login error:',error);
+        const msg=String(error?.message||error||'Login failed');
+        let friendly=msg;
+        if(/invalid login credentials/i.test(msg)) friendly='❌ Invalid username or password.';
+        else if(/email not confirmed|verification is required/i.test(msg)) friendly='📧 This account is not verified yet. Please verify the email before logging in.';
+        else if(/rate limit|too many/i.test(msg)) friendly='⏱️ Too many login attempts. Please wait a moment and try again.';
+        else if(/fetch|network|failed to fetch/i.test(msg)) friendly='🌐 Connection problem. Please check your internet connection and try again.';
+        showLoginError(friendly);
+    }finally{
+        if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='🔐 Log In Securely';submitBtn.classList.remove('rippling');}
     }
 }
 
-function submitLogin(event) {
-    event.preventDefault();
-    playClickSound();
-    const submitBtn = document.getElementById("loginSubmitBtn");
-    if (submitBtn) {
-        submitBtn.classList.add("rippling");
-        setTimeout(function() { submitBtn.classList.remove("rippling"); }, 500);
-    }
-    const nameVal = document.getElementById("usernameInput").value.trim();
-    loggedInUser = nameVal || "User";
-    syncLeaderboardUsername();
-    recordLeaderboardLogin();
-    document.getElementById("glowUsernameDisplay").textContent = loggedInUser;
-    document.getElementById("miniUsername").textContent = loggedInUser;
-    document.getElementById("dropdownName").textContent = loggedInUser;
-    document.getElementById("miniAvatar").textContent = loggedInUser.charAt(0).toUpperCase();
-    if (loginTipTimer) clearInterval(loginTipTimer);
-    document.getElementById("loginOverlay").style.display = "none";
-    showLoginLoadingThenDownload();
-}
-
-function submitSignup(event) {
-    event.preventDefault();
-    playClickSound();
-    const submitBtn = document.getElementById("signupSubmitBtn");
-    if (submitBtn) {
-        submitBtn.classList.add("rippling");
-        setTimeout(function() { submitBtn.classList.remove("rippling"); }, 500);
-    }
-    const passVal = document.getElementById("signupPasswordInput").value;
-    const confirmVal = document.getElementById("signupConfirmInput").value;
-    if (passVal !== confirmVal) {
-        alert("Passwords do not match. Please try again.");
-        return;
-    }
-    const nameVal = document.getElementById("signupUsernameInput").value.trim();
-    loggedInUser = nameVal || "User";
-    syncLeaderboardUsername();
-    recordLeaderboardLogin();
-    document.getElementById("glowUsernameDisplay").textContent = loggedInUser;
-    document.getElementById("miniUsername").textContent = loggedInUser;
-    document.getElementById("dropdownName").textContent = loggedInUser;
-    document.getElementById("miniAvatar").textContent = loggedInUser.charAt(0).toUpperCase();
-    if (loginTipTimer) clearInterval(loginTipTimer);
-    document.getElementById("loginOverlay").style.display = "none";
-    showLoginLoadingThenDownload();
+function submitSignup(event){
+    if(event)event.preventDefault();
+    showLoginError('🛡️ New account creation is disabled here. Please log in with your existing account.');
 }
 
 function showLoginLoadingThenDownload() {
@@ -5097,12 +5094,17 @@ function openAboutPanel(event) {
     closeProfileMenu();
     showDashboardInfo("ℹ️ About This Dashboard", "Hassan Little Official • Personal dashboard • Theme system • Music player • Privacy Center • Responsive UI.");
 }
-function demoLogout(event) {
+async function demoLogout(event) {
     if (event) event.stopPropagation();
     playClickSound();
     closeProfileMenu();
+    try { if(authClient) await authClient.auth.signOut(); } catch(e) { console.warn('Logout:',e); }
+    loggedInUser = "";
+    clearLoginError();
     const login = document.getElementById("loginOverlay");
     if (login) login.style.display = "flex";
+    const u=document.getElementById('usernameInput'); if(u)u.value='';
+    const p=document.getElementById('passwordInput'); if(p)p.value='';
 }
 function openDashboardPrivacy(event) {
     if (event) event.stopPropagation();
