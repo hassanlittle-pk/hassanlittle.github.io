@@ -4593,7 +4593,12 @@ function startLoginTips() {
 }
 
 let authClient = null;
-const AUTH_CONFIG = { url: SUPABASE_LEADERBOARD_CONFIG.url, publishableKey: SUPABASE_LEADERBOARD_CONFIG.publishableKey };
+// Auth config is declared independently so login code never touches a later
+// const (which previously caused: Cannot access 'AUTH_CONFIG' before initialization).
+const AUTH_CONFIG = {
+    url: 'https://noawtitvxxgpmjfocdkp.supabase.co',
+    publishableKey: 'sb_publishable_KIEovRnhJe5yJmH_tLA64A_vYZQ6um2'
+};
 
 function getAuthClient(){
     if(!authClient){
