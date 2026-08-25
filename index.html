@@ -2894,10 +2894,13 @@ document.addEventListener("DOMContentLoaded", function () {
                 <!-- LOGIN PANEL -->
                 <div class="auth-panel" id="loginPanel">
                     <form onsubmit="submitLogin(event)">
-                        <input type="text" id="usernameInput" class="entry-input login-anim-item" placeholder="Enter Username" required>
-                        <input type="password" class="entry-input login-anim-item" placeholder="Password" required>
+                        <input type="email" id="loginEmailInput" class="entry-input login-anim-item" placeholder="Email Address" autocomplete="email" required>
+                        <input type="password" id="loginPasswordInput" class="entry-input login-anim-item" placeholder="Password" autocomplete="current-password" required>
                         <button type="submit" class="btn primary login-anim-item" style="width: 100%;" id="loginSubmitBtn">Log In</button>
                     </form>
+                    <div style="display:flex;align-items:center;gap:10px;margin:14px 0;color:#737b92;font-size:11px;"><span style="height:1px;background:rgba(255,255,255,.10);flex:1"></span>OR<span style="height:1px;background:rgba(255,255,255,.10);flex:1"></span></div>
+                    <button type="button" class="btn secondary login-anim-item" style="width:100%;" id="googleLoginBtn" onclick="loginWithGoogle()">🔵 Continue with Google</button>
+                    <div id="authStatus" style="min-height:18px;margin-top:10px;font-size:11px;color:#969eb4;"></div>
                 </div>
 
                 <!-- SIGNUP PANEL -->
@@ -4542,7 +4545,7 @@ let loginTipTimer = null;
 function startLoginTips() {
     const tips = [
         "💡 Make sure to remember your password.",
-        "🔐 Enter any username or password to login.",
+        "🔐 Use the email and password from your account.",
         "🧠 Make sure you remember your pass.",
         "🛡️ This website uses SECURITY 3.0 X ADVANCED SYSTEM.",
         "🚀 MUCH MORE FEATURES COMING SOON...",
@@ -4552,7 +4555,7 @@ function startLoginTips() {
         "⚡ Your dashboard theme can be changed anytime.",
         "🎧 Explore the music player once you're inside.",
         "🖥️ Best experienced on a modern browser.",
-        "🔄 You can log in again anytime with any username.",
+        "🔄 Your account session can be restored on your next visit.",
         "✨ Try switching between 10 different color themes.",
         "🙌 Thanks for visiting Hassan Little Official!",
         "🕒 Check the live clock in the top-right corner of the dashboard.",
@@ -4631,52 +4634,127 @@ function switchAuthTab(tab) {
     }
 }
 
-function submitLogin(event) {
-    event.preventDefault();
-    playClickSound();
-    const submitBtn = document.getElementById("loginSubmitBtn");
-    if (submitBtn) {
-        submitBtn.classList.add("rippling");
-        setTimeout(function() { submitBtn.classList.remove("rippling"); }, 500);
+async function getSupabaseAuthClient(){
+    if (typeof supabase === "undefined" || !supabase.createClient) throw new Error("Supabase library could not load.");
+    if (!leaderboardClient) {
+        leaderboardClient = supabase.createClient(
+            SUPABASE_LEADERBOARD_CONFIG.url,
+            SUPABASE_LEADERBOARD_CONFIG.publishableKey,
+            {auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}}
+        );
     }
-    const nameVal = document.getElementById("usernameInput").value.trim();
-    loggedInUser = nameVal || "User";
-    syncLeaderboardUsername();
-    recordLeaderboardLogin();
-    document.getElementById("glowUsernameDisplay").textContent = loggedInUser;
-    document.getElementById("miniUsername").textContent = loggedInUser;
-    document.getElementById("dropdownName").textContent = loggedInUser;
-    document.getElementById("miniAvatar").textContent = loggedInUser.charAt(0).toUpperCase();
-    if (loginTipTimer) clearInterval(loginTipTimer);
-    document.getElementById("loginOverlay").style.display = "none";
+    return leaderboardClient;
+}
+
+function setAuthStatus(message, ok=false){
+    const el=document.getElementById("authStatus");
+    if(el){el.textContent=message||"";el.style.color=ok?"#00ff99":"#ff9b9b";}
+}
+
+async function finishRealLogin(user){
+    const client=await getSupabaseAuthClient();
+    const {data:profile}=await client.from("profiles").select("username,streak,last_streak_date,total_points,total_trophies").eq("id",user.id).maybeSingle();
+    const meta=user.user_metadata||{};
+    loggedInUser=profile?.username || meta.username || meta.name || (user.email?user.email.split("@")[0]:"User");
+    loggedInUser=String(loggedInUser).trim().slice(0,40)||"User";
+    const ids=["glowUsernameDisplay","miniUsername","dropdownName"];
+    ids.forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=loggedInUser});
+    const avatar=document.getElementById("miniAvatar");if(avatar)avatar.textContent=loggedInUser.charAt(0).toUpperCase();
+    if(loginTipTimer)clearInterval(loginTipTimer);
+    document.getElementById("loginOverlay").style.display="none";
+    document.body.classList.remove("login-privacy-visible");
+    const privacy=document.getElementById("loginPrivacyOverlay");if(privacy)privacy.style.display="none";
+    if(typeof syncLeaderboardUsername==='function') await syncLeaderboardUsername();
+    if(typeof recordLeaderboardLogin==='function') await recordLeaderboardLogin();
     showLoginLoadingThenDownload();
 }
 
-function submitSignup(event) {
+async function submitLogin(event) {
     event.preventDefault();
     playClickSound();
-    const submitBtn = document.getElementById("signupSubmitBtn");
-    if (submitBtn) {
-        submitBtn.classList.add("rippling");
-        setTimeout(function() { submitBtn.classList.remove("rippling"); }, 500);
+    const submitBtn=document.getElementById("loginSubmitBtn");
+    if(submitBtn){submitBtn.disabled=true;submitBtn.textContent="Signing in…";}
+    setAuthStatus("Checking your account…");
+    try{
+        const email=document.getElementById("loginEmailInput").value.trim();
+        const password=document.getElementById("loginPasswordInput").value;
+        const client=await getSupabaseAuthClient();
+        const {data,error}=await client.auth.signInWithPassword({email,password});
+        if(error)throw error;
+        if(!data.user)throw new Error("Login did not create a session.");
+        setAuthStatus("Login successful ✓",true);
+        await finishRealLogin(data.user);
+    }catch(error){
+        console.warn("Supabase login:",error);
+        setAuthStatus(error?.message||"Login failed. Check your email and password.");
+    }finally{
+        if(submitBtn){submitBtn.disabled=false;submitBtn.textContent="Log In";}
     }
-    const passVal = document.getElementById("signupPasswordInput").value;
-    const confirmVal = document.getElementById("signupConfirmInput").value;
-    if (passVal !== confirmVal) {
-        alert("Passwords do not match. Please try again.");
-        return;
+}
+
+async function loginWithGoogle(){
+    playClickSound();
+    const btn=document.getElementById("googleLoginBtn");
+    if(btn){btn.disabled=true;btn.textContent="Opening Google…";}
+    setAuthStatus("Connecting to Google…");
+    try{
+        const client=await getSupabaseAuthClient();
+        const {error}=await client.auth.signInWithOAuth({
+            provider:"google",
+            options:{redirectTo:window.location.origin+window.location.pathname}
+        });
+        if(error)throw error;
+    }catch(error){
+        console.warn("Google login:",error);
+        setAuthStatus(error?.message||"Google login could not start.");
+        if(btn){btn.disabled=false;btn.textContent="🔵 Continue with Google";}
     }
-    const nameVal = document.getElementById("signupUsernameInput").value.trim();
-    loggedInUser = nameVal || "User";
-    syncLeaderboardUsername();
-    recordLeaderboardLogin();
-    document.getElementById("glowUsernameDisplay").textContent = loggedInUser;
-    document.getElementById("miniUsername").textContent = loggedInUser;
-    document.getElementById("dropdownName").textContent = loggedInUser;
-    document.getElementById("miniAvatar").textContent = loggedInUser.charAt(0).toUpperCase();
-    if (loginTipTimer) clearInterval(loginTipTimer);
-    document.getElementById("loginOverlay").style.display = "none";
-    showLoginLoadingThenDownload();
+}
+
+async function submitSignup(event) {
+    event.preventDefault();
+    playClickSound();
+    const submitBtn=document.getElementById("signupSubmitBtn");
+    if(submitBtn){submitBtn.disabled=true;submitBtn.textContent="Creating…";}
+    setAuthStatus("");
+    try{
+        const username=document.getElementById("signupUsernameInput").value.trim();
+        const email=document.getElementById("signupEmailInput").value.trim();
+        const passVal=document.getElementById("signupPasswordInput").value;
+        const confirmVal=document.getElementById("signupConfirmInput").value;
+        if(passVal!==confirmVal)throw new Error("Passwords do not match.");
+        if(username.length<3)throw new Error("Username must be at least 3 characters.");
+        const client=await getSupabaseAuthClient();
+        const {data,error}=await client.auth.signUp({email,password:passVal,options:{data:{username}}});
+        if(error)throw error;
+        if(data.session && data.user){
+            setAuthStatus("Account created ✓",true);
+            await finishRealLogin(data.user);
+        }else{
+            setAuthStatus("Account created. Check your email to confirm the account.",true);
+        }
+    }catch(error){
+        console.warn("Supabase signup:",error);
+        setAuthStatus(error?.message||"Could not create account.");
+    }finally{
+        if(submitBtn){submitBtn.disabled=false;submitBtn.textContent="Create Account";}
+    }
+}
+
+async function restoreSupabaseSession(){
+    try{
+        const client=await getSupabaseAuthClient();
+        const {data}=await client.auth.getSession();
+        if(data?.session?.user){
+            // Only restore an already authenticated user; never auto-accept privacy.
+            if(document.getElementById("loginOverlay")?.style.display!=="none") await finishRealLogin(data.session.user);
+        }
+        client.auth.onAuthStateChange(async (event,session)=>{
+            if((event==='SIGNED_IN'||event==='INITIAL_SESSION')&&session?.user){
+                if(document.getElementById("loginOverlay")?.style.display!=="none") await finishRealLogin(session.user);
+            }
+        });
+    }catch(error){console.warn("Auth session restore:",error)}
 }
 
 function showLoginLoadingThenDownload() {
@@ -5474,6 +5552,7 @@ function closeEngagementProfile(){document.getElementById('engagementProfileOver
 function detectGlobalLeaderboardActivity(rows){if(!Array.isArray(rows))return;const prev=lastActivitySnapshot;lastActivitySnapshot=rows.map(x=>({id:x.id,username:x.username,points:Number(x.points||0)}));if(!prev.length)return;const prevMap=new Map(prev.map(x=>[x.id,x]));for(const row of rows.slice(0,5)){const old=prevMap.get(row.id);if(!old) addLiveActivity(`${row.username} joined the weekly league 🌍`);else if(Number(row.points||0)>old.points) addLiveActivity(`${row.username} earned +${Number(row.points||0)-old.points} points ⚡`)}}
 loadEngagement();
 
+restoreSupabaseSession();
 initLiveLeaderboard();
 setTimeout(()=>{if(leaderboardReady){loadWorldChat();attachWorldChatRealtime()}},2500);
 async function recordLeaderboardLogin(){if(!loggedInUser)return;await syncLeaderboardUsername();const k='hl_lb_login_awarded_'+leaderboardSeason?.key;if(sessionStorage.getItem(k))return;sessionStorage.setItem(k,'1');await awardLeaderboardPoints(loggedInUser,10);refreshGlobalLeaderboard()}
