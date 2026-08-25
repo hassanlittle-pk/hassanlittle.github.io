@@ -4716,6 +4716,8 @@ async function submitLogin(event){
         else if(/username not found/i.test(msg))friendly='👤 Username not found. If this is your first visit, use Sign Up first.';
         else if(/not verified|email not confirmed/i.test(msg))friendly='📧 Please verify your email before logging in.';
         else if(/rate limit|too many/i.test(msg))friendly='⏱️ Too many attempts. Please wait a moment and try again.';
+        else if(/function .*resolve_username_email.*does not exist|could not find the function|PGRST202/i.test(msg))friendly='🛠️ Username login database setup is missing. Run the SQL setup first.';
+        else if(/function .*resolve_username_email.*does not exist|could not find the function|PGRST202/i.test(msg))friendly='🛠️ Username login database setup is missing. Run the SQL setup first.';
         else if(/fetch|network|failed to fetch/i.test(msg))friendly='🌐 Connection problem. Please check your internet connection.';
         showLoginError(friendly);
     }finally{if(submitBtn){submitBtn.disabled=false;submitBtn.textContent='🔐 Log In Securely';}}
@@ -4740,10 +4742,15 @@ async function submitSignup(event){
         if(existing?.email)throw new Error('That username is already taken. Please choose another one.');
         const {data,error}=await client.auth.signUp({
             email,password,
-            options:{data:{username}}
+            options:{
+                data:{username},
+                emailRedirectTo: window.location.origin + window.location.pathname
+            }
         });
         if(error)throw error;
         if(data?.user){
+            // The username is stored in Supabase Auth user metadata.
+            // The SQL resolver maps this username back to the same Auth email on every login.
             if(data.session){
                 // If email confirmation is disabled, sign-in can continue immediately.
                 loggedInUser=username;
@@ -4766,6 +4773,8 @@ async function submitSignup(event){
         if(/already|duplicate|taken/i.test(msg))friendly='👤 That username or email is already in use.';
         else if(/rate limit|email rate limit/i.test(msg))friendly='📧 Email sending is temporarily rate-limited. Please try again later.';
         else if(/password/i.test(msg)&&/weak|short|characters/i.test(msg))friendly='🔐 Please choose a stronger password.';
+        else if(/function .*resolve_username_email.*does not exist|could not find the function|PGRST202/i.test(msg))friendly='🛠️ Login database setup is missing. Run the SQL setup I provided, then try again.';
+        else if(/function .*resolve_username_email.*does not exist|could not find the function|PGRST202/i.test(msg))friendly='🛠️ Login database setup is missing. Run the SQL setup first.';
         else if(/fetch|network|failed to fetch/i.test(msg))friendly='🌐 Connection problem. Please check your internet connection.';
         showSignupError(friendly);
     }finally{if(btn){btn.disabled=false;btn.textContent='✨ Create My Account';}}
