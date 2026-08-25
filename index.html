@@ -2700,6 +2700,17 @@ body.login-privacy-visible #loginPrivacyOverlay { display:flex !important; }
 <style id="world-chat-css">
 .world-chat-launch{display:none;position:fixed;right:22px;bottom:22px;z-index:10020;border:1px solid rgba(0,220,255,.35);background:linear-gradient(135deg,rgba(20,30,55,.96),rgba(75,35,120,.96));color:#fff;border-radius:999px;padding:11px 16px;font-weight:900;box-shadow:0 8px 30px rgba(0,0,0,.35),0 0 20px rgba(0,200,255,.12);cursor:pointer}.world-chat-launch .wc-dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#00ff79;box-shadow:0 0 9px #00ff79;margin-right:7px;animation:wcPulse 1s infinite alternate}@keyframes wcPulse{to{opacity:.45;transform:scale(.8)}}
 .world-chat-overlay{position:fixed;inset:0;background:rgba(0,0,0,.42);backdrop-filter:blur(5px);z-index:10050;display:none;align-items:flex-end;justify-content:flex-end;padding:18px}.world-chat-panel{width:min(430px,96vw);height:min(680px,88vh);border:1px solid rgba(255,255,255,.12);border-radius:22px;background:linear-gradient(180deg,rgba(17,20,35,.98),rgba(8,11,23,.99));box-shadow:0 20px 80px rgba(0,0,0,.55);display:flex;flex-direction:column;overflow:hidden}.wc-head{padding:15px 16px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:space-between}.wc-title{display:flex;align-items:center;gap:9px}.wc-title h3{margin:0;font-size:15px}.wc-title p{margin:3px 0 0;font-size:9px;color:var(--text-muted)}.wc-close{border:0;background:rgba(255,255,255,.07);color:#fff;width:32px;height:32px;border-radius:10px;cursor:pointer}.wc-status{padding:7px 12px;font-size:8px;color:var(--text-muted);border-bottom:1px solid rgba(255,255,255,.05)}.wc-messages{flex:1;overflow:auto;padding:13px;display:flex;flex-direction:column;gap:9px}.wc-msg{max-width:88%;padding:9px 11px;border-radius:14px 14px 14px 5px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.06)}.wc-msg.mine{align-self:flex-end;border-radius:14px 14px 5px 14px;background:rgba(0,190,255,.09);border-color:rgba(0,190,255,.16)}.wc-user{font-size:9px;font-weight:900;color:#8eeeff}.wc-text{font-size:11px;line-height:1.45;margin-top:4px;white-space:pre-wrap;overflow-wrap:anywhere}.wc-time{font-size:7px;color:var(--text-muted);margin-top:5px}.wc-reply{margin-top:6px;padding:5px 7px;border-left:2px solid rgba(120,100,255,.8);background:rgba(0,0,0,.15);font-size:8px;color:var(--text-muted)}.wc-reply-btn{border:0;background:none;color:#7cecff;font-size:8px;cursor:pointer;padding:4px 0 0}.wc-compose{padding:11px;border-top:1px solid rgba(255,255,255,.08)}.wc-replying{display:none;padding:7px 9px;margin-bottom:7px;border-radius:9px;background:rgba(112,87,255,.09);font-size:8px;color:var(--text-muted)}.wc-row{display:flex;gap:7px}.wc-input{flex:1;min-width:0;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.045);color:#fff;border-radius:12px;padding:10px 11px;outline:none;font-size:11px}.wc-send{border:0;border-radius:12px;padding:0 15px;background:linear-gradient(135deg,#00b9ff,#7657ff);color:#fff;font-weight:900;cursor:pointer}.wc-send:disabled{opacity:.5;cursor:not-allowed}.wc-hint{font-size:7px;color:var(--text-muted);margin-top:6px}@media(max-width:600px){.world-chat-launch{right:14px;bottom:14px}.world-chat-overlay{padding:8px}.world-chat-panel{height:92vh;border-radius:19px}}
+
+/* ===== EMAIL OTP VERIFICATION UI ===== */
+#emailVerifyPanel{display:none;margin-top:18px;padding:20px;border:1px solid rgba(120,100,255,.28);border-radius:18px;background:rgba(10,12,28,.72);text-align:center;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+#emailVerifyPanel.show{display:block;animation:otpPanelIn .35s ease}
+#emailVerifyPanel h3{margin:0 0 7px;color:#fff;font-size:18px}
+#emailVerifyPanel p{margin:0 auto 15px;color:#969eb4;font-size:12px;line-height:1.5;max-width:390px}
+#signupOtpInput{width:100%;box-sizing:border-box;text-align:center;letter-spacing:10px;font-size:25px;font-weight:800;padding:13px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.05);color:#fff;outline:none}
+#signupOtpInput:focus{border-color:rgba(130,110,255,.8);box-shadow:0 0 0 3px rgba(130,110,255,.12)}
+.otp-actions{display:flex;gap:8px;margin-top:11px}
+.otp-actions button{flex:1}
+@keyframes otpPanelIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 </style></head>
 
 
@@ -2915,6 +2926,18 @@ document.addEventListener("DOMContentLoaded", function () {
                 </div>
 
             </div>
+        </div>
+
+        <!-- EMAIL 6-DIGIT VERIFICATION -->
+        <div id="emailVerifyPanel" aria-live="polite">
+            <h3>✉️ Verify your email</h3>
+            <p>We sent a 6-digit verification code to <strong id="verifyEmailDisplay">your email</strong>. Enter the code below to finish creating your account.</p>
+            <input id="signupOtpInput" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" aria-label="6 digit verification code">
+            <div class="otp-actions">
+                <button type="button" class="btn primary" id="verifyOtpBtn" onclick="verifySignupOtp()">Verify Email</button>
+                <button type="button" class="btn" id="resendOtpBtn" onclick="resendSignupOtp()">Resend Code</button>
+            </div>
+            <div id="otpStatus" style="min-height:18px;margin-top:10px;font-size:11px;color:#969eb4"></div>
         </div>
 
         <div class="login-tips login-anim-item" id="loginTip">💡 Make sure to remember your password.</div>
@@ -4711,6 +4734,73 @@ async function loginWithGoogle(){
     }
 }
 
+let pendingSignupEmail = "";
+let pendingSignupUsername = "";
+
+function setOtpStatus(message, ok=false){
+    const el=document.getElementById("otpStatus");
+    if(el){el.textContent=message||"";el.style.color=ok?"#00ff99":"#ff9b9b";}
+}
+
+function showEmailVerification(email, username){
+    pendingSignupEmail=String(email||"").trim();
+    pendingSignupUsername=String(username||"").trim();
+    const panel=document.getElementById("emailVerifyPanel");
+    const display=document.getElementById("verifyEmailDisplay");
+    if(display)display.textContent=pendingSignupEmail;
+    if(panel)panel.classList.add("show");
+    const otp=document.getElementById("signupOtpInput");
+    if(otp){otp.value="";setTimeout(()=>otp.focus(),80);}
+    setOtpStatus("Enter the 6-digit code from your email.",true);
+}
+
+async function verifySignupOtp(){
+    const btn=document.getElementById("verifyOtpBtn");
+    const token=(document.getElementById("signupOtpInput")?.value||"").replace(/\D/g,"").slice(0,6);
+    if(token.length!==6){setOtpStatus("Please enter the complete 6-digit code.");return;}
+    if(!pendingSignupEmail){setOtpStatus("Verification session expired. Please sign up again.");return;}
+    if(btn){btn.disabled=true;btn.textContent="Verifying…";}
+    setOtpStatus("Checking your verification code…",true);
+    try{
+        const client=await getSupabaseAuthClient();
+        const {data,error}=await client.auth.verifyOtp({email:pendingSignupEmail,token,type:"email"});
+        if(error)throw error;
+        if(!data?.user)throw new Error("Verification succeeded but no account session was returned.");
+        const {error:profileError}=await client.from("profiles").upsert({
+            id:data.user.id,
+            username:pendingSignupUsername || data.user.user_metadata?.username || pendingSignupEmail.split("@")[0],
+            login_username:pendingSignupUsername || data.user.user_metadata?.username || pendingSignupEmail.split("@")[0],
+            email:pendingSignupEmail,
+            email_verified:true
+        },{onConflict:"id"});
+        if(profileError)console.warn("Profile sync after verification:",profileError.message);
+        setOtpStatus("Email verified ✓",true);
+        await finishRealLogin(data.user);
+    }catch(error){
+        console.warn("Email OTP verification:",error);
+        setOtpStatus(error?.message||"Invalid or expired verification code.");
+    }finally{
+        if(btn){btn.disabled=false;btn.textContent="Verify Email";}
+    }
+}
+
+async function resendSignupOtp(){
+    const btn=document.getElementById("resendOtpBtn");
+    if(!pendingSignupEmail){setOtpStatus("Verification session expired. Please sign up again.");return;}
+    if(btn){btn.disabled=true;btn.textContent="Sending…";}
+    try{
+        const client=await getSupabaseAuthClient();
+        const {error}=await client.auth.resend({type:"signup",email:pendingSignupEmail});
+        if(error)throw error;
+        setOtpStatus("A new verification code has been sent ✓",true);
+    }catch(error){
+        console.warn("Resend verification:",error);
+        setOtpStatus(error?.message||"Could not resend the code.");
+    }finally{
+        if(btn){btn.disabled=false;btn.textContent="Resend Code";}
+    }
+}
+
 async function submitSignup(event) {
     event.preventDefault();
     playClickSound();
@@ -4724,14 +4814,22 @@ async function submitSignup(event) {
         const confirmVal=document.getElementById("signupConfirmInput").value;
         if(passVal!==confirmVal)throw new Error("Passwords do not match.");
         if(username.length<3)throw new Error("Username must be at least 3 characters.");
+        if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))throw new Error("Please enter a valid email address.");
+        if(passVal.length<6)throw new Error("Password must be at least 6 characters.");
         const client=await getSupabaseAuthClient();
         const {data,error}=await client.auth.signUp({email,password:passVal,options:{data:{username}}});
         if(error)throw error;
-        if(data.session && data.user){
+        // With email confirmation enabled Supabase returns no session.
+        // The user must enter the 6-digit email OTP before entering the dashboard.
+        if(data?.user && !data?.session){
+            showEmailVerification(email,username);
+            setAuthStatus("Verification code sent ✓",true);
+        }else if(data?.session && data?.user){
             setAuthStatus("Account created ✓",true);
             await finishRealLogin(data.user);
         }else{
-            setAuthStatus("Account created. Check your email to confirm the account.",true);
+            showEmailVerification(email,username);
+            setAuthStatus("Check your email for the verification code.",true);
         }
     }catch(error){
         console.warn("Supabase signup:",error);
