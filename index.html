@@ -1974,193 +1974,158 @@ footer.site-footer {
     transform: translateY(8px);
 }
 
-
-/* ================= FINAL LOGIN SCREEN ================= */
-#loginOverlay.final-login-overlay {
-    position: fixed;
-    inset: 0;
-    z-index: 10000;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    padding: 20px;
-    overflow: hidden;
-    background:
-        radial-gradient(circle at 15% 15%, #4fa3ff 0%, transparent 45%),
-        radial-gradient(circle at 85% 20%, #2f6fe0 0%, transparent 50%),
-        radial-gradient(circle at 20% 85%, #6bb4ff 0%, transparent 50%),
-        radial-gradient(circle at 80% 80%, #1e56c9 0%, transparent 55%),
-        linear-gradient(135deg, #3a7bdb, #6fb2ff);
-    background-blend-mode: screen;
-    animation: finalLoginFadeIn .5s ease;
+/* ================= LOGIN OVERLAY EXTRA ANIMATIONS ================= */
+#loginOverlay .login-icon-anim {
+    display: inline-block;
+    animation: loginIconFloat 2.4s infinite ease-in-out;
+    filter: drop-shadow(0 0 12px var(--accent-glow));
+}
+@keyframes loginIconFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(-6deg); }
 }
 
-#loginOverlay.final-login-overlay::before {
+#loginOverlay .login-anim-item {
+    opacity: 0;
+    animation: loginItemRise .6s ease forwards;
+}
+#loginOverlay h2.login-anim-item { animation-delay: .1s; }
+#loginOverlay p.login-anim-item { animation-delay: .2s; }
+#loginOverlay input#usernameInput { animation-delay: .3s; }
+#loginOverlay input[type="password"].login-anim-item { animation-delay: .4s; }
+#loginOverlay button.login-anim-item { animation-delay: .5s; }
+#loginOverlay .login-tips.login-anim-item { animation-delay: .6s; }
+
+@keyframes loginItemRise {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#loginOverlay .entry-input.login-anim-item {
+    opacity: 0;
+    animation: loginItemRise .6s ease forwards;
+}
+
+#loginOverlay .entry-input.login-anim-item:focus {
+    opacity: 1;
+    box-shadow: 0 0 0 3px rgba(155, 124, 255, .18), 0 0 18px var(--accent-glow);
+    animation: loginItemRise .6s ease forwards, inputGlowPulse 1.6s infinite ease-in-out;
+}
+@keyframes inputGlowPulse {
+    0%, 100% { box-shadow: 0 0 0 3px rgba(155,124,255,.18), 0 0 10px var(--accent-glow); }
+    50% { box-shadow: 0 0 0 3px rgba(155,124,255,.28), 0 0 22px var(--accent-glow); }
+}
+
+#loginOverlay button.primary {
+    position: relative;
+    overflow: hidden;
+    animation: loginItemRise .6s ease forwards, btnGlowPulse 2.2s infinite ease-in-out .8s;
+}
+@keyframes btnGlowPulse {
+    0%, 100% { box-shadow: 0 15px 35px rgba(112,87,255,.25); }
+    50% { box-shadow: 0 15px 45px var(--accent-glow); }
+}
+#loginOverlay button.primary::after {
     content: "";
     position: absolute;
-    inset: -20%;
-    background: inherit;
-    filter: blur(22px);
-    opacity: .72;
-    transform: scale(1.08);
-    pointer-events: none;
-}
-
-.final-login-card {
-    position: relative;
-    z-index: 1;
-    width: min(560px, 94vw);
-    background: #ffffff;
-    border-radius: 26px;
-    padding: 56px 54px 50px;
-    box-shadow: 0 40px 100px rgba(20,50,110,.35);
-    animation: finalLoginCardIn .5s cubic-bezier(.2,1,.3,1) both;
-    color: #3a3f4a;
-}
-
-.final-login-card h1 {
-    margin: 0;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    font-size: 38px;
-    line-height: 1.15;
-    font-weight: 700;
-    color: #2f7bf6;
-    letter-spacing: -.5px;
-}
-
-.final-login-card .final-login-sub {
-    margin: 8px 0 0;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    font-size: 14px;
-    line-height: 1.5;
-    color: #9aa0ac;
-}
-
-.final-login-card .final-login-sub a,
-.final-login-card .final-forgot {
-    color: #2f7bf6;
-    text-decoration: none;
-    font-weight: 600;
-}
-
-.final-login-card .final-login-sub a:hover,
-.final-login-card .final-forgot:hover {
-    text-decoration: underline;
-}
-
-.final-login-field {
-    position: relative;
-    margin-top: 26px;
-}
-
-.final-login-field .final-ficon {
-    position: absolute;
-    left: 22px;
     top: 50%;
-    transform: translateY(-50%);
-    width: 20px;
-    height: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #b7bcc6;
+    left: 50%;
+    width: 0;
+    height: 0;
+    background: rgba(255,255,255,.5);
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    opacity: 0;
     pointer-events: none;
 }
-
-.final-login-field .final-ficon svg {
-    width: 100%;
-    height: 100%;
+#loginOverlay button.primary.rippling::after {
+    animation: btnRipple .5s ease-out;
+}
+@keyframes btnRipple {
+    0% { width: 0; height: 0; opacity: .6; }
+    100% { width: 300px; height: 300px; opacity: 0; }
 }
 
-.final-login-field input {
-    width: 100%;
-    padding: 18px 22px 18px 54px;
-    border-radius: 40px;
-    border: 1.5px solid #dfe3ea;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    font-size: 15px;
-    color: #3a3f4a;
-    outline: none;
-    transition: .2s;
-    background: #fff;
+#loginOverlay {
+    animation: authOverlayFadeIn .5s ease;
 }
-
-.final-login-field input::placeholder {
-    color: #c2c6cf;
-}
-
-.final-login-field input:focus {
-    border-color: #2f7bf6;
-    box-shadow: 0 0 0 4px rgba(47,123,246,.12);
-}
-
-.final-login-options {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-top: 20px;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    font-size: 13.5px;
-}
-
-.final-login-remember {
-    display: flex;
-    align-items: center;
-    gap: 9px;
-    color: #8b909b;
-    cursor: pointer;
-    user-select: none;
-}
-
-.final-login-remember input {
-    width: 17px;
-    height: 17px;
-    accent-color: #2f7bf6;
-    cursor: pointer;
-}
-
-.final-login-submit {
-    width: 100%;
-    margin-top: 26px;
-    padding: 18px;
-    border: none;
-    border-radius: 40px;
-    font-family: 'Segoe UI', Arial, sans-serif;
-    font-size: 16px;
-    font-weight: 700;
-    color: #fff;
-    cursor: pointer;
-    background: linear-gradient(180deg, #4fa3ff, #2f7bf6);
-    box-shadow: 0 14px 30px rgba(47,123,246,.35);
-    transition: .2s;
-    position: relative;
-    overflow: hidden;
-}
-
-.final-login-submit:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 18px 38px rgba(47,123,246,.42);
-}
-
-.final-login-submit:active {
-    transform: translateY(0) scale(.99);
-}
-
-@keyframes finalLoginFadeIn {
+@keyframes authOverlayFadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
 }
 
-@keyframes finalLoginCardIn {
-    from { opacity: 0; transform: translateY(24px) scale(.97); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
+#loginOverlay .entry-box {
+    max-width: 480px;
+    animation: entryBoxSlideRight .65s cubic-bezier(0.16, 1, 0.3, 1), loginBoxGlow 3s infinite ease-in-out .65s;
+}
+@keyframes entryBoxSlideRight {
+    from { opacity: 0; transform: translateX(80px) scale(.94); }
+    to { opacity: 1; transform: translateX(0) scale(1); }
+}
+@keyframes loginBoxGlow {
+    0%, 100% { box-shadow: 0 30px 100px rgba(0, 0, 0, 0.6); }
+    50% { box-shadow: 0 30px 100px rgba(0, 0, 0, 0.6), 0 0 60px rgba(155,124,255,.15); }
 }
 
-@media(max-width:600px) {
-    .final-login-card { padding: 40px 28px 36px; }
-    .final-login-card h1 { font-size: 30px; }
-    .final-login-field input { padding: 15px 18px 15px 50px; font-size: 14px; }
-    .final-login-options { flex-direction: column; align-items: flex-start; gap: 12px; }
+/* ============= AUTH TABS (LOGIN / SIGNUP SWITCH) ============= */
+.auth-tabs {
+    position: relative;
+    display: flex;
+    gap: 4px;
+    background: rgba(255,255,255,.05);
+    border: 1px solid rgba(255,255,255,.08);
+    border-radius: 14px;
+    padding: 5px;
+    margin-bottom: 22px;
+}
+.auth-tab {
+    position: relative;
+    z-index: 2;
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px 8px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--text-muted);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: color .3s ease;
+}
+.auth-tab.active {
+    color: #ffffff;
+}
+.auth-tab-indicator {
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: calc(50% - 5px);
+    height: calc(100% - 10px);
+    border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
+    box-shadow: 0 8px 20px rgba(112,87,255,.35);
+    transition: transform .4s cubic-bezier(0.65, 0, 0.35, 1);
+    z-index: 1;
+}
+.auth-tab-indicator.to-signup {
+    transform: translateX(100%);
+}
+
+.auth-panels-viewport {
+    overflow: hidden;
+}
+.auth-panels-track {
+    display: flex;
+    width: 200%;
+    transition: transform .5s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.auth-panels-track.show-signup {
+    transform: translateX(-50%);
+}
+.auth-panel {
+    width: 50%;
+    flex-shrink: 0;
+    padding: 0 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -3007,43 +2972,47 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
 </div>
 
-<!-- STEP 3: FINAL LOGIN OVERLAY -->
-<div class="entry-overlay final-login-overlay" id="loginOverlay" style="display: none;">
-    <div class="final-login-card">
-        <h1>Sign in</h1>
-        <p class="final-login-sub">Not registered? <a href="#" onclick="return false;">Click here to register.</a></p>
+<!-- STEP 3: LOGIN OVERLAY -->
+<div class="entry-overlay" id="loginOverlay" style="display: none;">
+    <div class="entry-box auth-box">
+        <div style="font-size: 46px; margin-bottom: 6px;"><span class="login-icon-anim" id="authIcon">🔐</span></div>
+        <h2 class="login-anim-item" id="authTitle" style="font-size: 26px;">Welcome Back</h2>
+        <p class="login-anim-item" id="authSubtitle" style="color: #969eb4; margin-top: 6px; margin-bottom: 20px;">Log in or create an account to begin custom setup.</p>
 
-        <form onsubmit="submitLogin(event)">
-            <div class="final-login-field">
-                <span class="final-ficon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="12" cy="8" r="4"></circle>
-                        <path d="M4 21c0-4.4 3.6-8 8-8s8 3.6 8 8"></path>
-                    </svg>
-                </span>
-                <input type="text" id="usernameInput" placeholder="Username" autocomplete="username" required>
+        <div class="auth-tabs login-anim-item">
+            <button type="button" class="auth-tab active" id="tabLoginBtn" onclick="switchAuthTab('login')">Log In</button>
+            <button type="button" class="auth-tab" id="tabSignupBtn" onclick="switchAuthTab('signup')">Sign Up</button>
+            <div class="auth-tab-indicator" id="authTabIndicator"></div>
+        </div>
+
+        <div class="auth-panels-viewport login-anim-item">
+            <div class="auth-panels-track" id="authPanelsTrack">
+
+                <!-- LOGIN PANEL -->
+                <div class="auth-panel" id="loginPanel">
+                    <form onsubmit="submitLogin(event)">
+                        <input type="email" id="usernameInput" class="entry-input login-anim-item" placeholder="Enter Email Address" required>
+                        <input type="password" class="entry-input login-anim-item" placeholder="Password" required>
+                        <button type="submit" class="btn primary login-anim-item" style="width: 100%;" id="loginSubmitBtn">Log In</button>
+                        <div id="firebaseAuthHint" style="margin-top:10px;font-size:11px;color:var(--text-muted);text-align:center;">Use the verified email and password from your Firebase account.</div>
+                    </form>
+                </div>
+
+                <!-- SIGNUP PANEL -->
+                <div class="auth-panel" id="signupPanel">
+                    <form onsubmit="submitSignup(event)">
+                        <input type="text" id="signupUsernameInput" class="entry-input" placeholder="Choose a Username" required>
+                        <input type="email" id="signupEmailInput" class="entry-input" placeholder="Email Address" required>
+                        <input type="password" id="signupPasswordInput" class="entry-input" placeholder="Create Password" required>
+                        <input type="password" id="signupConfirmInput" class="entry-input" placeholder="Confirm Password" required>
+                        <button type="submit" class="btn primary" style="width: 100%;" id="signupSubmitBtn">Create Account</button>
+                    </form>
+                </div>
+
             </div>
+        </div>
 
-            <div class="final-login-field">
-                <span class="final-ficon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <circle cx="7" cy="15" r="4"></circle>
-                        <path d="M9.5 12.5 20 2M20 2l3 3M16 6l2 2"></path>
-                    </svg>
-                </span>
-                <input type="password" id="finalPasswordInput" placeholder="Password" autocomplete="current-password" required>
-            </div>
-
-            <div class="final-login-options">
-                <label class="final-login-remember">
-                    <input type="checkbox" checked>
-                    Remember Me
-                </label>
-                <a href="#" class="final-forgot" onclick="return false;">Forgot Password?</a>
-            </div>
-
-            <button type="submit" class="final-login-submit" id="loginSubmitBtn">Sign in</button>
-        </form>
+        <div class="login-tips login-anim-item" id="loginTip">💡 Make sure to remember your password.</div>
     </div>
 </div>
 
@@ -4151,6 +4120,22 @@ document.addEventListener("DOMContentLoaded", function () {
     THIS WEBSITE WAS developed and powered by hassan little offcial co enterperises inc all rights reserved 2026 terms and conditions apply,
 </footer>
 
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import { getAuth, setPersistence, browserLocalPersistence, createUserWithEmailAndPassword, signInWithEmailAndPassword, sendEmailVerification, updateProfile, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
+  const firebaseConfig={apiKey:"AIzaSyDTQYYc5viEjY2LLenoqjM4V9-DTnUlMsQ",authDomain:"real-login-auth.firebaseapp.com",projectId:"real-login-auth",storageBucket:"real-login-auth.firebasestorage.app",messagingSenderId:"679338167003",appId:"1:679338167003:web:3299447766ed9e2e589afe"};
+  const firebaseApp=initializeApp(firebaseConfig),firebaseAuth=getAuth(firebaseApp);
+  window.__firebaseAuthReady=(async function(){
+    await setPersistence(firebaseAuth,browserLocalPersistence);
+    let currentUser=null; onAuthStateChanged(firebaseAuth,user=>{currentUser=user;});
+    return {
+      signUp:async(email,password,displayName)=>{const c=await createUserWithEmailAndPassword(firebaseAuth,email,password);if(displayName)await updateProfile(c.user,{displayName});return c;},
+      signIn:(email,password)=>signInWithEmailAndPassword(firebaseAuth,email,password),
+      sendVerification:user=>sendEmailVerification(user), signOut:()=>signOut(firebaseAuth),
+      getCurrentUser:async()=>{if(currentUser)return currentUser;return await new Promise(resolve=>{const unsub=onAuthStateChanged(firebaseAuth,user=>{unsub();resolve(user);});});}
+    };
+  })().catch(error=>{console.error("Firebase initialization failed:",error);return null;});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
@@ -4850,9 +4835,14 @@ function beginSessionVerification() {
 
     setTimeout(function() {
         document.getElementById("cookieLoadingOverlay").style.display = "none";
-        document.getElementById("loginOverlay").style.display = "flex";
-        document.body.classList.add("login-privacy-visible");
-        document.getElementById("loginPrivacyOverlay").style.display = "flex";
+        restoreFirebaseSessionAndLaunch().then(function(restored){
+            if(restored)return;
+            document.getElementById("loginOverlay").style.display = "flex";
+            document.body.classList.add("login-privacy-visible");
+            document.getElementById("loginPrivacyOverlay").style.display = "flex";
+            switchAuthTab("login");
+            startLoginTips();
+        });
     }, 12000);
 }
 
@@ -4868,24 +4858,178 @@ function rejectLoginPrivacy() {
     document.body.classList.remove("login-privacy-visible");
 }
 
-function submitLogin(event) {
+let loginTipTimer = null;
+function startLoginTips() {
+    const tips = [
+        "💡 Make sure to remember your password.",
+        "🔐 Your email and password are checked securely by Firebase.",
+        "🧠 Make sure you remember your pass.",
+        "🛡️ This website uses SECURITY 3.0 X ADVANCED SYSTEM.",
+        "🚀 MUCH MORE FEATURES COMING SOON...",
+        "🔑 Save your password in a trusted password manager.",
+        "📝 Don't forget to give us your feedback!",
+        "🌐 Never share your login details with anyone.",
+        "⚡ Your dashboard theme can be changed anytime.",
+        "🎧 Explore the music player once you're inside.",
+        "🖥️ Best experienced on a modern browser.",
+        "🔄 Your verified Firebase session can stay signed in on this browser.",
+        "✨ Try switching between 10 different color themes.",
+        "🙌 Thanks for visiting Hassan Little Official!",
+        "🕒 Check the live clock in the top-right corner of the dashboard.",
+        "🖱️ Move your mouse around to interact with the background particles.",
+        "🎨 Your favorite theme is saved for the whole session.",
+        "📬 Use the 'Leave a Note' feature to send a message directly.",
+        "⚙️ Head to Settings to enable Performance Mode on slower devices.",
+        "🌙 Switch to Light Mode from Settings if you prefer a brighter look.",
+        "🔊 Turn on auto-play music for the full dashboard experience.",
+        "📱 This site is fully responsive — works great on mobile too.",
+        "🏆 Check out the Achievements section for milestones and highlights.",
+        "🎯 Visit the Goals section to see what's next on the roadmap.",
+        "💬 Reach out via WhatsApp or Instagram from the Contact section.",
+        "🧩 Every theme changes the entire dashboard's color palette instantly.",
+        "🔋 Performance Mode reduces animations to save battery on older phones.",
+        "🌟 New features and updates are added regularly — stay tuned!",
+        "🖼️ The background particles react to your cursor in real time.",
+        "🕹️ Try switching between multiple themes to see which one you like best.",
+        "📊 Your session details are shown right in the profile dropdown.",
+        "🔐 Your session is ready — keep your password private.",
+        "🎵 Skip or pause tracks anytime from the music player panel.",
+        "🧭 Use the navigation bar to jump straight to any section.",
+        "💻 A stable internet connection helps load music tracks faster.",
+        "🖊️ Notes you send go straight to Hassan's developer dashboard.",
+        "🔍 Zoom in or out — the layout adjusts to fit your screen.",
+        "🌈 Ten unique themes, one dashboard — pick your favorite vibe.",
+        "🧊 Arctic Silver and Deep Space are great picks for a calmer look.",
+        "🔥 Crimson Fire and Sunset Amber bring a bold, energetic feel.",
+        "🛠️ Found a bug? Use the feedback note to let us know.",
+        "📌 Bookmark this page to come back anytime.",
+        "🎓 This project reflects an ongoing learning journey in web development.",
+        "🧑‍💻 Built with HTML, CSS, and JavaScript — no frameworks needed.",
+        "🙏 Every visit and piece of feedback is genuinely appreciated.",
+        "🎉 Welcome aboard — enjoy exploring Hassan Little Official!"
+    ];
+    let i = 0;
+    const tip = document.getElementById("loginTip");
+    if (loginTipTimer) clearInterval(loginTipTimer);
+    tip.textContent = tips[0];
+    loginTipTimer = setInterval(function() {
+        tip.classList.add("tip-fade");
+        setTimeout(function() {
+            i = (i + 1) % tips.length;
+            tip.textContent = tips[i];
+            tip.classList.remove("tip-fade");
+        }, 350);
+    }, 3000);
+}
+
+function switchAuthTab(tab) {
+    playClickSound();
+    const track = document.getElementById("authPanelsTrack");
+    const indicator = document.getElementById("authTabIndicator");
+    const tabLoginBtn = document.getElementById("tabLoginBtn");
+    const tabSignupBtn = document.getElementById("tabSignupBtn");
+    const title = document.getElementById("authTitle");
+    const subtitle = document.getElementById("authSubtitle");
+    const icon = document.getElementById("authIcon");
+
+    if (tab === "signup") {
+        track.classList.add("show-signup");
+        indicator.classList.add("to-signup");
+        tabSignupBtn.classList.add("active");
+        tabLoginBtn.classList.remove("active");
+        title.textContent = "Create Account";
+        subtitle.textContent = "Sign up to begin custom setup.";
+        icon.textContent = "📝";
+    } else {
+        track.classList.remove("show-signup");
+        indicator.classList.remove("to-signup");
+        tabLoginBtn.classList.add("active");
+        tabSignupBtn.classList.remove("active");
+        title.textContent = "Welcome Back";
+        subtitle.textContent = "Log in or create an account to begin custom setup.";
+        icon.textContent = "🔐";
+    }
+}
+
+async function submitLogin(event) {
     event.preventDefault();
     playClickSound();
     const submitBtn = document.getElementById("loginSubmitBtn");
-    if (submitBtn) {
-        submitBtn.classList.add("rippling");
-        setTimeout(function() { submitBtn.classList.remove("rippling"); }, 500);
-    }
-    const nameVal = document.getElementById("usernameInput").value.trim();
-    loggedInUser = nameVal || "User";
-    syncLeaderboardUsername();
-    recordLeaderboardLogin();
-    document.getElementById("glowUsernameDisplay").textContent = loggedInUser;
-    document.getElementById("miniUsername").textContent = loggedInUser;
-    document.getElementById("dropdownName").textContent = loggedInUser;
-    document.getElementById("miniAvatar").textContent = loggedInUser.charAt(0).toUpperCase();
-    document.getElementById("loginOverlay").style.display = "none";
-    showLoginLoadingThenDownload();
+    if (submitBtn) { submitBtn.classList.add("rippling"); setTimeout(function(){submitBtn.classList.remove("rippling");},500); submitBtn.disabled=true; }
+    const email=document.getElementById("usernameInput").value.trim();
+    const password=document.querySelector("#loginPanel input[type='password']")?.value||"";
+    if(!email||!password){alert("Enter your email address and password.");if(submitBtn)submitBtn.disabled=false;return;}
+    try{
+        const api=await window.__firebaseAuthReady;
+        if(!api)throw new Error("Firebase Authentication is not ready. Please refresh the page.");
+        const result=await api.signIn(email,password),user=result.user;
+        if(!user.emailVerified){await api.signOut();alert("Your email is not verified yet. Please open the verification email sent by Firebase, verify your email, then log in again.");if(submitBtn)submitBtn.disabled=false;return;}
+        loggedInUser=user.displayName||user.email.split("@")[0]||"User";
+        localStorage.setItem("hl_firebase_display_name",loggedInUser);
+        syncLeaderboardUsername(); recordLeaderboardLogin();
+        document.getElementById("glowUsernameDisplay").textContent=loggedInUser;
+        document.getElementById("miniUsername").textContent=loggedInUser;
+        document.getElementById("dropdownName").textContent=loggedInUser;
+        document.getElementById("miniAvatar").textContent=loggedInUser.charAt(0).toUpperCase();
+        if(loginTipTimer)clearInterval(loginTipTimer);
+        document.getElementById("loginOverlay").style.display="none";
+        showLoginLoadingThenDownload();
+    }catch(error){
+        console.warn("Firebase login:",error); const code=error?.code||"";
+        let message=error?.message||"Login failed. Please check your email and password.";
+        if(code==="auth/invalid-credential"||code==="auth/wrong-password"||code==="auth/user-not-found")message="Invalid email or password.";
+        else if(code==="auth/too-many-requests")message="Too many login attempts. Please wait a little and try again.";
+        else if(code==="auth/invalid-email")message="Please enter a valid email address.";
+        alert(message);
+    }finally{if(submitBtn)submitBtn.disabled=false;}
+}
+
+async function submitSignup(event) {
+    event.preventDefault(); playClickSound();
+    const submitBtn=document.getElementById("signupSubmitBtn");
+    if(submitBtn){submitBtn.classList.add("rippling");setTimeout(function(){submitBtn.classList.remove("rippling");},500);submitBtn.disabled=true;}
+    const nameVal=document.getElementById("signupUsernameInput").value.trim();
+    const emailVal=document.getElementById("signupEmailInput").value.trim();
+    const passVal=document.getElementById("signupPasswordInput").value;
+    const confirmVal=document.getElementById("signupConfirmInput").value;
+    if(!nameVal||!emailVal||!passVal||!confirmVal){alert("Please complete all fields.");if(submitBtn)submitBtn.disabled=false;return;}
+    if(passVal!==confirmVal){alert("Passwords do not match. Please try again.");if(submitBtn)submitBtn.disabled=false;return;}
+    try{
+        const api=await window.__firebaseAuthReady;
+        if(!api)throw new Error("Firebase Authentication is not ready. Please refresh the page.");
+        const result=await api.signUp(emailVal,passVal,nameVal);
+        await api.sendVerification(result.user); await api.signOut();
+        switchAuthTab("login");
+        document.getElementById("usernameInput").value=emailVal;
+        document.querySelector("#loginPanel input[type='password']").value="";
+        alert("Account created successfully. A verification email has been sent to "+emailVal+". Verify your email first, then log in.");
+    }catch(error){
+        console.warn("Firebase signup:",error); const code=error?.code||"";
+        let message=error?.message||"Could not create your account.";
+        if(code==="auth/email-already-in-use")message="An account with this email already exists. Please log in instead.";
+        else if(code==="auth/weak-password")message="Password does not meet the Firebase password policy.";
+        else if(code==="auth/invalid-email")message="Please enter a valid email address.";
+        else if(code==="auth/too-many-requests")message="Too many requests. Please wait a little and try again.";
+        alert(message);
+    }finally{if(submitBtn)submitBtn.disabled=false;}
+}
+
+async function restoreFirebaseSessionAndLaunch(){
+    try{
+        const api=await window.__firebaseAuthReady; if(!api)return false;
+        const user=await api.getCurrentUser(); if(!user)return false;
+        if(!user.emailVerified){await api.signOut();return false;}
+        loggedInUser=user.displayName||localStorage.getItem("hl_firebase_display_name")||user.email.split("@")[0]||"User";
+        document.getElementById("glowUsernameDisplay").textContent=loggedInUser;
+        document.getElementById("miniUsername").textContent=loggedInUser;
+        document.getElementById("dropdownName").textContent=loggedInUser;
+        document.getElementById("miniAvatar").textContent=loggedInUser.charAt(0).toUpperCase();
+        document.getElementById("loginOverlay").style.display="none";
+        document.getElementById("loginPrivacyOverlay").style.display="none";
+        document.body.classList.remove("login-privacy-visible");
+        if(loginTipTimer)clearInterval(loginTipTimer);
+        showLoginLoadingThenDownload(); return true;
+    }catch(error){console.warn("Firebase session restore:",error);return false;}
 }
 
 function showLoginLoadingThenDownload() {
@@ -5308,12 +5452,14 @@ function openAboutPanel(event) {
     closeProfileMenu();
     showDashboardInfo("ℹ️ About This Dashboard", "Hassan Little Official • Personal dashboard • Theme system • Music player • Privacy Center • Responsive UI.");
 }
-function demoLogout(event) {
-    if (event) event.stopPropagation();
-    playClickSound();
-    closeProfileMenu();
-    const login = document.getElementById("loginOverlay");
-    if (login) login.style.display = "flex";
+async function demoLogout(event){
+    if(event)event.stopPropagation(); playClickSound(); closeProfileMenu();
+    try{const api=await window.__firebaseAuthReady;if(api)await api.signOut();}catch(e){console.warn("Firebase logout:",e);}
+    loggedInUser="";
+    const login=document.getElementById("loginOverlay"); if(login)login.style.display="flex";
+    document.body.classList.add("login-privacy-visible");
+    document.getElementById("loginPrivacyOverlay").style.display="flex";
+    switchAuthTab("login"); startLoginTips();
 }
 function openDashboardPrivacy(event) {
     if (event) event.stopPropagation();
