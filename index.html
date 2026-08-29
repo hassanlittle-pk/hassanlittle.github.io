@@ -3048,7 +3048,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </div>
 
 
-<!-- REAL APPWRITE REGISTER SCREEN -->
+<!-- REAL FIREBASE REGISTER SCREEN -->
 <div class="entry-overlay final-login-overlay" id="registerOverlay" style="display:none; z-index:10010;">
     <div class="final-login-card">
         <h1>Create account</h1>
@@ -3076,13 +3076,13 @@ document.addEventListener("DOMContentLoaded", function () {
     </div>
 </div>
 
-<!-- APPWRITE AUTH STATUS SCREEN -->
+<!-- REAL FIREBASE EMAIL VERIFICATION SCREEN -->
 <div class="entry-overlay final-login-overlay" id="emailVerificationOverlay" style="display:none; z-index:10011;">
     <div class="final-login-card" style="text-align:center;">
         <div style="font-size:54px;margin-bottom:10px;">✉️</div>
         <h1>Verify your email</h1>
         <p class="final-login-sub" style="line-height:1.6;">We sent a verification email to<br><strong id="verificationEmailText" style="color:#fff;"></strong></p>
-        <p style="color:#969eb4;font-size:13px;line-height:1.6;margin:15px 0;">Your account is protected by Appwrite Authentication. Sign in with your email and password to access your profile.</p>
+        <p style="color:#969eb4;font-size:13px;line-height:1.6;margin:15px 0;">Open Gmail, find the Firebase verification email, and use its verification button/link. Your account will only be allowed into the website after Firebase confirms the email.</p>
         <div id="verificationMessage" style="display:none;margin:12px 0;padding:11px 14px;border-radius:12px;font-size:13px;text-align:center;"></div>
         <button type="button" class="final-login-submit" id="checkVerificationBtn" onclick="checkEmailVerification()">I verified my email — Continue</button>
         <button type="button" class="final-login-submit" id="resendVerificationBtn" onclick="resendVerificationEmail()" style="margin-top:10px;background:linear-gradient(180deg,#252d43,#171d2e);">Resend verification email</button>
@@ -6010,53 +6010,38 @@ html,body{max-width:100%;overflow-x:hidden}
 </script>
 
 
-<script src="https://cdn.jsdelivr.net/npm/appwrite@17.0.0"></script>
-<script>
-(function(){
-  "use strict";
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+  import {
+    getAuth,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    sendEmailVerification,
+    updateProfile,
+    onAuthStateChanged,
+    signOut
+  } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
-  const client = new Appwrite.Client();
-  client
-    .setEndpoint("https://nyc.cloud.appwrite.io/v1")
-    .setProject("6a92d56b001ad9c6fb23");
-  const account = new Appwrite.Account(client);
+  const firebaseConfig = {
+    apiKey: "AIzaSyDTQYYc5viEjY2LLenoqjM4V9-DTnUlMsQ",
+    authDomain: "real-login-auth.firebaseapp.com",
+    projectId: "real-login-auth",
+    storageBucket: "real-login-auth.firebasestorage.app",
+    messagingSenderId: "679338167003",
+    appId: "1:679338167003:web:3299447766ed9e2e589afe"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  let pendingVerificationUser = null;
 
   const $ = id => document.getElementById(id);
-  let appwriteUser = null;
-
   function setMessage(id, text, ok=false){
     const el=$(id); if(!el)return;
     el.textContent=text; el.style.display='block';
     el.style.background=ok?'rgba(39,174,96,.12)':'rgba(255,70,90,.12)';
     el.style.border=ok?'1px solid rgba(39,174,96,.3)':'1px solid rgba(255,70,90,.3)';
     el.style.color=ok?'#75e6a3':'#ff9aa7';
-  }
-
-  function friendlyAuthError(error){
-    const type=error && error.type ? error.type : '';
-    const msg=String(error && error.message || 'Authentication failed.');
-    if(type==='user_already_exists') return 'This email is already registered. Please sign in instead.';
-    if(type==='user_invalid_credentials') return 'Invalid email or password.';
-    if(type==='user_blocked') return 'This account has been blocked.';
-    if(type==='user_invalid_email') return 'Please enter a valid email address.';
-    if(type==='password_recently_used') return 'Please choose a different password.';
-    if(type==='password_too_short') return 'Password must be at least 8 characters.';
-    if(type==='rate_limit_exceeded') return 'Too many attempts. Please wait a little and try again.';
-    if(type==='general_rate_limit_exceeded') return 'Too many attempts. Please wait a little and try again.';
-    return msg;
-  }
-
-  function enterDashboard(user){
-    appwriteUser=user||appwriteUser;
-    const displayName=(appwriteUser && appwriteUser.name) || (appwriteUser && appwriteUser.email ? appwriteUser.email.split('@')[0] : 'User');
-    loggedInUser=displayName;
-    try{ syncLeaderboardUsername(); recordLeaderboardLogin(); }catch(e){}
-    ['glowUsernameDisplay','miniUsername','dropdownName'].forEach(id=>{if($(id))$(id).textContent=displayName;});
-    if($('miniAvatar'))$('miniAvatar').textContent=displayName.charAt(0).toUpperCase();
-    if($('loginOverlay'))$('loginOverlay').style.display='none';
-    if($('registerOverlay'))$('registerOverlay').style.display='none';
-    if($('emailVerificationOverlay'))$('emailVerificationOverlay').style.display='none';
-    showLoginLoadingThenDownload();
   }
 
   window.openRegisterScreen = function(event){
@@ -6075,8 +6060,8 @@ html,body{max-width:100%;overflow-x:hidden}
 
   window.cancelRegistration = function(event){
     if(event)event.preventDefault();
+    pendingVerificationUser=null;
     $('emailVerificationOverlay').style.display='none';
-    $('registerOverlay').style.display='none';
     $('loginOverlay').style.display='flex';
   };
 
@@ -6087,39 +6072,59 @@ html,body{max-width:100%;overflow-x:hidden}
     const password=$('registerPassword').value;
     const confirm=$('registerConfirmPassword').value;
     const btn=$('registerSubmitBtn');
-    if(!username){setMessage('registerMessage','Please enter a username.');return;}
-    if(password!==confirm){setMessage('registerMessage','Passwords do not match.');return;}
-    if(password.length<8){setMessage('registerMessage','Password must be at least 8 characters.');return;}
+    if(password!==confirm){ setMessage('registerMessage','Passwords do not match.'); return; }
+    if(password.length<8){ setMessage('registerMessage','Password must be at least 8 characters.'); return; }
     btn.disabled=true; btn.textContent='Creating account...';
     try{
-      const user=await account.create({
-        userId: Appwrite.ID.unique(),
-        email: email,
-        password: password,
-        name: username
-      });
-      await account.createEmailPasswordSession({email,password});
-      appwriteUser=await account.get();
-      setMessage('registerMessage','Account created successfully.',true);
-      enterDashboard(appwriteUser);
+      const cred=await createUserWithEmailAndPassword(auth,email,password);
+      await updateProfile(cred.user,{displayName:username});
+      await sendEmailVerification(cred.user);
+      pendingVerificationUser=cred.user;
+      $('verificationEmailText').textContent=email;
+      $('registerOverlay').style.display='none';
+      $('emailVerificationOverlay').style.display='flex';
+      setMessage('verificationMessage','Verification email sent. Open Gmail and verify it, then press the button above.',true);
     }catch(error){
-      setMessage('registerMessage',friendlyAuthError(error));
-    }finally{btn.disabled=false;btn.textContent='Create account';}
+      let msg='Could not create the account.';
+      if(error.code==='auth/email-already-in-use') msg='This email is already registered. Please sign in instead.';
+      else if(error.code==='auth/invalid-email') msg='Please enter a valid email address.';
+      else if(error.code==='auth/weak-password') msg='Password does not meet the Firebase password policy.';
+      else if(error.code==='auth/too-many-requests') msg='Too many attempts. Please wait a little and try again.';
+      else msg=error.message||msg;
+      setMessage('registerMessage',msg);
+    }finally{ btn.disabled=false; btn.textContent='Create account'; }
   };
 
-  // Kept for compatibility with the existing screen. Appwrite email verification is optional;
-  // authentication itself is handled by the secure Appwrite email/password session.
   window.resendVerificationEmail = async function(){
-    setMessage('verificationMessage','Email/password authentication is active. No verification email is required for sign-in.',true);
+    const btn=$('resendVerificationBtn');
+    try{
+      if(!pendingVerificationUser) throw new Error('No pending account.');
+      btn.disabled=true; btn.textContent='Sending...';
+      await sendEmailVerification(pendingVerificationUser);
+      setMessage('verificationMessage','A new verification email has been sent.',true);
+    }catch(error){
+      setMessage('verificationMessage',error.message||'Could not resend the verification email.');
+    }finally{ btn.disabled=false; btn.textContent='Resend verification email'; }
   };
 
   window.checkEmailVerification = async function(){
+    const btn=$('checkVerificationBtn');
     try{
-      const user=await account.get();
-      enterDashboard(user);
-    }catch(error){
-      setMessage('verificationMessage','Please sign in again.');
-    }
+      const user=auth.currentUser || pendingVerificationUser;
+      if(!user){ setMessage('verificationMessage','Your registration session is no longer available. Please sign in again.'); return; }
+      btn.disabled=true; btn.textContent='Checking...';
+      await user.reload();
+      if(user.emailVerified){
+        pendingVerificationUser=null;
+        $('emailVerificationOverlay').style.display='none';
+        $('loginOverlay').style.display='flex';
+        $('usernameInput').value=user.email;
+        setMessage('verificationMessage','Email verified successfully.',true);
+      }else{
+        setMessage('verificationMessage','Not verified yet. Open the email and click the Firebase verification link first.');
+      }
+    }catch(error){ setMessage('verificationMessage',error.message||'Could not check verification status.'); }
+    finally{ btn.disabled=false; btn.textContent='I verified my email — Continue'; }
   };
 
   window.submitLogin = async function(event){
@@ -6127,41 +6132,42 @@ html,body{max-width:100%;overflow-x:hidden}
     const email=$('usernameInput').value.trim();
     const password=$('finalPasswordInput').value;
     const btn=$('loginSubmitBtn');
-    if(!email || !password){setMessage('loginMessage','Please enter your email and password.');return;}
+    if(!email || !password)return;
     btn.disabled=true; btn.textContent='Signing in...';
     try{
-      // Remove any old client session before creating the current one.
-      try{await account.deleteSession({sessionId:'current'});}catch(e){}
-      await account.createEmailPasswordSession({email,password});
-      appwriteUser=await account.get();
-      enterDashboard(appwriteUser);
-    }catch(error){
-      setMessage('loginMessage',friendlyAuthError(error));
-      alert(friendlyAuthError(error));
-    }finally{btn.disabled=false;btn.textContent='Sign in';}
-  };
-
-  // Make logout available to the existing profile/menu buttons if they call it.
-  window.appwriteLogout = async function(){
-    try{await account.deleteSession({sessionId:'current'});}catch(e){}
-    appwriteUser=null;
-    loggedInUser='';
-    if($('userProfileBadge'))$('userProfileBadge').style.display='none';
-    if($('loginOverlay'))$('loginOverlay').style.display='flex';
-  };
-
-  // Restore a valid Appwrite session after refresh.
-  (async function restoreSession(){
-    try{
-      const user=await account.get();
-      if(user && user.$id){
-        appwriteUser=user;
-        // Do not interrupt the privacy/loading gate if it is still active; the existing
-        // launch flow will reveal the login/dashboard normally.
+      const cred=await signInWithEmailAndPassword(auth,email,password);
+      await cred.user.reload();
+      if(!cred.user.emailVerified){
+        pendingVerificationUser=cred.user;
+        $('verificationEmailText').textContent=cred.user.email;
+        $('loginOverlay').style.display='none';
+        $('emailVerificationOverlay').style.display='flex';
+        setMessage('verificationMessage','Please verify your email before entering the website. You can resend the email below.');
+        await signOut(auth);
+        return;
       }
-    }catch(e){appwriteUser=null;}
-  })();
-})();
+      const displayName=cred.user.displayName || email.split('@')[0] || 'User';
+      loggedInUser=displayName;
+      try{ syncLeaderboardUsername(); recordLeaderboardLogin(); }catch(e){}
+      ['glowUsernameDisplay','miniUsername','dropdownName'].forEach(id=>{if($(id))$(id).textContent=displayName;});
+      if($('miniAvatar'))$('miniAvatar').textContent=displayName.charAt(0).toUpperCase();
+      $('loginOverlay').style.display='none';
+      showLoginLoadingThenDownload();
+    }catch(error){
+      let msg='Invalid email or password.';
+      if(error.code==='auth/invalid-credential') msg='Invalid email or password.';
+      else if(error.code==='auth/user-disabled') msg='This account has been disabled.';
+      else if(error.code==='auth/too-many-requests') msg='Too many login attempts. Please wait and try again.';
+      alert(msg);
+    }finally{ btn.disabled=false; btn.textContent='Sign in'; }
+  };
+
+  onAuthStateChanged(auth, user=>{
+    if(user && !user.emailVerified && pendingVerificationUser===null){
+      // Do not let an unverified Firebase session silently enter the dashboard.
+      signOut(auth).catch(()=>{});
+    }
+  });
 </script>
 
 </body>
