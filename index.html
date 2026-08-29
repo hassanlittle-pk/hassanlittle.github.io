@@ -4972,6 +4972,16 @@ async function sendOtpCode(event) {
     setAuthBusy("sendCodeBtn", true, "Sending…", "Send Login Code");
     try {
         const client = await waitForAuthClient();
+
+        // If the leaderboard system already signed us in anonymously, sign out first.
+        // Otherwise Supabase tries to LINK that anonymous user to this email instead
+        // of creating a fresh account, which is what was throwing
+        // "Database error saving new user".
+        const { data: sessionData } = await client.auth.getSession();
+        if (sessionData?.session?.user?.is_anonymous) {
+            await client.auth.signOut();
+        }
+
         const { error } = await client.auth.signInWithOtp({
             email: emailVal,
             options: { shouldCreateUser: true }
@@ -4997,6 +5007,10 @@ async function resendOtpCode(event) {
     setAuthStatus("Resending…", false);
     try {
         const client = await waitForAuthClient();
+        const { data: sessionData } = await client.auth.getSession();
+        if (sessionData?.session?.user?.is_anonymous) {
+            await client.auth.signOut();
+        }
         const { error } = await client.auth.signInWithOtp({
             email: pendingOtpEmail,
             options: { shouldCreateUser: true }
