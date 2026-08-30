@@ -3078,16 +3078,24 @@ document.addEventListener("DOMContentLoaded", function () {
 
 <!-- SUPABASE IN-SITE VERIFICATION SCREEN -->
 <div class="entry-overlay final-login-overlay" id="emailVerificationOverlay" style="display:none; z-index:10011;">
-    <div class="final-login-card" style="text-align:center;">
+    <div class="final-login-card" style="text-align:center;max-height:92vh;overflow-y:auto;">
         <div style="font-size:54px;margin-bottom:10px;">✉️</div>
-        <h1>Verify your email</h1>
+        <h1>Verify your account</h1>
         <p class="final-login-sub" style="line-height:1.6;">Verification for<br><strong id="verificationEmailText" style="color:#fff;"></strong></p>
-        <p style="color:#969eb4;font-size:13px;line-height:1.6;margin:15px 0 8px;">Your personal 6-digit verification code is shown below. Enter the same code to activate this account.</p>
-        <div id="verificationCodeDisplay" style="font-size:32px;letter-spacing:8px;font-weight:900;color:#fff;background:rgba(112,87,255,.12);border:1px solid rgba(112,87,255,.35);border-radius:14px;padding:15px 10px;margin:10px 0 14px;user-select:text;">------</div>
-        <input id="verificationCodeInput" inputmode="numeric" maxlength="6" autocomplete="one-time-code" placeholder="Enter 6-digit code" style="width:100%;padding:14px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#fff;text-align:center;font-size:20px;letter-spacing:6px;outline:none;box-sizing:border-box;">
+        <p style="color:#969eb4;font-size:13px;line-height:1.6;margin:15px 0 12px;">First generate your personal 6-digit code. Then type that code in the verification box below and continue.</p>
+
+        <button type="button" class="final-login-submit" id="resendVerificationBtn" onclick="resendVerificationEmail()" style="margin:0 0 12px;background:linear-gradient(180deg,#252d43,#171d2e);">Generate new code</button>
+
+        <div id="generatedCodePanel" style="display:none;background:rgba(112,87,255,.12);border:1px solid rgba(112,87,255,.35);border-radius:14px;padding:14px 10px;margin:0 0 14px;">
+            <div style="font-size:10px;letter-spacing:1.5px;color:#969eb4;text-transform:uppercase;margin-bottom:7px;">Your generated code</div>
+            <div id="verificationCodeDisplay" style="font-size:30px;letter-spacing:7px;font-weight:900;color:#fff;user-select:text;">------</div>
+        </div>
+
+        <div style="text-align:left;margin:4px 0 8px;font-size:12px;font-weight:700;color:#dce3ff;">Enter verification code</div>
+        <input id="verificationCodeInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="Enter 6-digit code here" aria-label="Enter verification code" style="width:100%;padding:15px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(112,87,255,.45);color:#fff;text-align:center;font-size:20px;letter-spacing:5px;outline:none;box-sizing:border-box;">
+        <div style="color:#969eb4;font-size:11px;margin-top:8px;line-height:1.5;">After entering the code, click <strong style="color:#fff;">Verify code & Continue</strong>. Supabase will verify it before your account opens.</div>
         <div id="verificationMessage" style="display:none;margin:12px 0;padding:11px 14px;border-radius:12px;font-size:13px;text-align:center;"></div>
-        <button type="button" class="final-login-submit" id="checkVerificationBtn" onclick="checkEmailVerification()">Verify code & Continue</button>
-        <button type="button" class="final-login-submit" id="resendVerificationBtn" onclick="resendVerificationEmail()" style="margin-top:10px;background:linear-gradient(180deg,#252d43,#171d2e);">Generate new code</button>
+        <button type="button" class="final-login-submit" id="checkVerificationBtn" onclick="checkEmailVerification()" style="margin-top:4px;">Verify code & Continue</button>
         <a href="#" onclick="cancelRegistration(event)" style="display:block;margin-top:16px;color:#8eb8ff;text-decoration:none;font-size:13px;">Back to sign in</a>
     </div>
 </div>
@@ -6046,10 +6054,12 @@ html,body{max-width:100%;overflow-x:hidden}
     pendingVerificationUser=user;
     $('verificationEmailText').textContent=user.email||'';
     $('verificationCodeDisplay').textContent='------';
+    $('generatedCodePanel').style.display='none';
     $('verificationCodeInput').value='';
     const code=makeCode();
     await saveVerificationCode(user.id,code);
     $('verificationCodeDisplay').textContent=code;
+    $('generatedCodePanel').style.display='block';
     $('registerOverlay').style.display='none';
     $('loginOverlay').style.display='none';
     $('emailVerificationOverlay').style.display='flex';
@@ -6119,6 +6129,7 @@ html,body{max-width:100%;overflow-x:hidden}
       const code=makeCode();
       await saveVerificationCode(pendingVerificationUser.id,code);
       $('verificationCodeDisplay').textContent=code;
+      $('generatedCodePanel').style.display='block';
       $('verificationCodeInput').value='';
       setMessage('verificationMessage','New verification code generated.',true);
     }catch(error){
@@ -6128,9 +6139,9 @@ html,body{max-width:100%;overflow-x:hidden}
 
   window.checkEmailVerification = async function(){
     const btn=$('checkVerificationBtn');
-    const code=$('verificationCodeInput').value.trim();
+    const code=$('verificationCodeInput').value.replace(/\D/g,'').trim();
     if(!pendingVerificationUser){ setMessage('verificationMessage','No pending account. Please sign in again.'); return; }
-    if(!/^\d{6}$/.test(code)){ setMessage('verificationMessage','Enter the 6-digit code shown above.'); return; }
+    if(!/^\d{6}$/.test(code)){ setMessage('verificationMessage','Please type your 6-digit code in the verification box.'); $('verificationCodeInput').focus(); return; }
     try{
       btn.disabled=true; btn.textContent='Checking...';
       const {data,error}=await authClient.rpc('verify_user_code',{p_code:code});
@@ -6181,6 +6192,10 @@ html,body{max-width:100%;overflow-x:hidden}
       alert(msg);
     }finally{ btn.disabled=false; btn.textContent='Sign in'; }
   };
+
+  $('verificationCodeInput')?.addEventListener('input', function(){
+    this.value=this.value.replace(/\D/g,'').slice(0,6);
+  });
 
   // Restore an existing Supabase session after refresh.
   authClient.auth.getSession().then(async ({data})=>{
