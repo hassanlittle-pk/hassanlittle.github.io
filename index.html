@@ -3043,6 +3043,20 @@ document.addEventListener("DOMContentLoaded", function () {
             </div>
 
             <button type="submit" class="final-login-submit" id="loginSubmitBtn">Sign in</button>
+
+            <!-- Verification appears inside the SAME Sign in interface after email + password are accepted -->
+            <div id="loginVerificationPanel" style="display:none;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.10);">
+                <div style="font-size:12px;font-weight:800;color:#dce3ff;margin-bottom:8px;text-align:left;">🔐 Enter verification code</div>
+                <p style="color:#969eb4;font-size:11px;line-height:1.5;text-align:left;margin:0 0 10px;">Your account needs verification. Generate a new 6-digit code, then type it below. You stay on this Sign in screen.</p>
+                <button type="button" class="final-login-submit" id="loginGenerateCodeBtn" onclick="generateLoginVerificationCode()" style="margin:0 0 10px;background:linear-gradient(180deg,#252d43,#171d2e);">Generate new code</button>
+                <div id="loginGeneratedCodePanel" style="display:none;background:rgba(112,87,255,.12);border:1px solid rgba(112,87,255,.35);border-radius:14px;padding:12px 10px;margin:0 0 10px;">
+                    <div style="font-size:10px;letter-spacing:1.2px;color:#969eb4;text-transform:uppercase;margin-bottom:6px;">Your generated code</div>
+                    <div id="loginGeneratedCodeDisplay" style="font-size:28px;letter-spacing:6px;font-weight:900;color:#fff;user-select:text;">------</div>
+                </div>
+                <input id="loginVerificationCodeInput" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="one-time-code" placeholder="Enter 6-digit code here" style="width:100%;padding:15px;border-radius:12px;background:rgba(255,255,255,.06);border:1px solid rgba(112,87,255,.45);color:#fff;text-align:center;font-size:20px;letter-spacing:5px;outline:none;box-sizing:border-box;">
+                <div id="loginVerificationMessage" style="display:none;margin:10px 0;padding:10px 12px;border-radius:12px;font-size:12px;text-align:center;"></div>
+                <button type="button" class="final-login-submit" id="loginVerifyCodeBtn" onclick="verifyLoginCode()" style="margin-top:10px;">Verify code & Continue</button>
+            </div>
         </form>
     </div>
 </div>
@@ -6050,20 +6064,18 @@ html,body{max-width:100%;overflow-x:hidden}
     return code;
   }
 
-  async function showVerification(user, message='Your verification code is shown below.'){
+  async function showVerification(user, message='Account verification required.'){
     pendingVerificationUser=user;
     $('verificationEmailText').textContent=user.email||'';
-    $('verificationCodeDisplay').textContent='------';
-    $('generatedCodePanel').style.display='none';
-    $('verificationCodeInput').value='';
-    const code=makeCode();
-    await saveVerificationCode(user.id,code);
-    $('verificationCodeDisplay').textContent=code;
-    $('generatedCodePanel').style.display='block';
+    // Keep the user on the same Sign in interface and reveal the code entry area there.
     $('registerOverlay').style.display='none';
-    $('loginOverlay').style.display='none';
-    $('emailVerificationOverlay').style.display='flex';
-    setMessage('verificationMessage',message,true);
+    $('emailVerificationOverlay').style.display='none';
+    $('loginOverlay').style.display='flex';
+    $('loginVerificationPanel').style.display='block';
+    $('loginVerificationCodeInput').value='';
+    $('loginGeneratedCodeDisplay').textContent='------';
+    $('loginGeneratedCodePanel').style.display='none';
+    setMessage('loginVerificationMessage',message,true);
   }
 
   window.openRegisterScreen = function(event){
@@ -6113,7 +6125,7 @@ html,body{max-width:100%;overflow-x:hidden}
       },{onConflict:'user_id'});
       if(profileError) throw profileError;
 
-      await showVerification(data.user,'Account created. Your 6-digit verification code is displayed on this screen.');
+      await showVerification(data.user,'Account created. You are now on the Sign in screen. Click Generate new code, then enter it below.');
     }catch(error){
       let msg=error.message||'Could not create the account.';
       if(/already registered|already exists/i.test(msg)) msg='This email is already registered. Please sign in instead.';
@@ -6168,6 +6180,38 @@ html,body{max-width:100%;overflow-x:hidden}
     showLoginLoadingThenDownload();
   }
 
+  window.generateLoginVerificationCode = async function(){
+    const btn=$('loginGenerateCodeBtn');
+    try{
+      if(!pendingVerificationUser) throw new Error('Please sign in with your Gmail and password first.');
+      btn.disabled=true; btn.textContent='Generating...';
+      const code=makeCode();
+      await saveVerificationCode(pendingVerificationUser.id,code);
+      $('loginGeneratedCodeDisplay').textContent=code;
+      $('loginGeneratedCodePanel').style.display='block';
+      $('loginVerificationCodeInput').value='';
+      setMessage('loginVerificationMessage','New code generated. Type it in the box below.',true);
+      $('loginVerificationCodeInput').focus();
+    }catch(error){ setMessage('loginVerificationMessage',error.message||'Could not generate a new code.'); }
+    finally{ btn.disabled=false; btn.textContent='Generate new code'; }
+  };
+
+  window.verifyLoginCode = async function(){
+    const btn=$('loginVerifyCodeBtn');
+    const code=$('loginVerificationCodeInput').value.replace(/\D/g,'').trim();
+    if(!pendingVerificationUser){ setMessage('loginVerificationMessage','Please sign in first.'); return; }
+    if(!/^\d{6}$/.test(code)){ setMessage('loginVerificationMessage','Please enter the full 6-digit code.'); $('loginVerificationCodeInput').focus(); return; }
+    try{
+      btn.disabled=true; btn.textContent='Checking...';
+      const {data,error}=await authClient.rpc('verify_user_code',{p_code:code});
+      if(error) throw error;
+      if(!data) throw new Error('Incorrect or expired verification code.');
+      setMessage('loginVerificationMessage','Verification successful. Opening your account...',true);
+      await finishLogin(pendingVerificationUser);
+    }catch(error){ setMessage('loginVerificationMessage',error.message||'Could not verify the code.'); }
+    finally{ btn.disabled=false; btn.textContent='Verify code & Continue'; }
+  };
+
   window.submitLogin = async function(event){
     event.preventDefault();
     const email=$('usernameInput').value.trim();
@@ -6182,7 +6226,7 @@ html,body{max-width:100%;overflow-x:hidden}
       const {data:profile,error:profileError}=await authClient.from('user_profiles').select('username,verified').eq('user_id',data.user.id).single();
       if(profileError) throw profileError;
       if(!profile?.verified){
-        await showVerification(data.user,'This account is not verified yet. A fresh code has been generated.');
+        await showVerification(data.user,'Account found. Click Generate new code, then enter the 6-digit code below.');
         return;
       }
       await finishLogin(data.user);
@@ -6194,6 +6238,10 @@ html,body{max-width:100%;overflow-x:hidden}
   };
 
   $('verificationCodeInput')?.addEventListener('input', function(){
+    this.value=this.value.replace(/\D/g,'').slice(0,6);
+  });
+
+  $('loginVerificationCodeInput')?.addEventListener('input', function(){
     this.value=this.value.replace(/\D/g,'').slice(0,6);
   });
 
